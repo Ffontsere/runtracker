@@ -1,0 +1,24 @@
+{
+  "name": "RunTracker",
+  "short_name": "RunTracker",
+  "description": "Seguiment d'entrenaments de running",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F7FA",
+  "theme_color": "#FC4C02",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
