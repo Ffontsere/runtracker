@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RunTracker">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#D11E6B" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1A17" media="(prefers-color-scheme: dark)">
+<title>RunTracker</title>
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  /* Berry & Indigo on warm cream */
+  --primary:#D11E6B;--on-primary:#FFFFFF;--primary-container:#FFD9E6;--on-primary-container:#3E0021;
+  --secondary:#4A4FB5;--secondary-container:#E0E0FF;--on-secondary-container:#0A0C57;
+  --tertiary:#8E2DA8;--tertiary-container:#F6D9FF;--on-tertiary-container:#33004A;
+  --accent2:#00A6A6;
+  --error:#BA1A1A;--error-container:#FFDAD6;--on-error-container:#410002;
+  --surface:#F7F3EA;--on-surface:#241F1A;--on-surface-var:#6A6258;
+  --surface-c-low:#FFFFFF;--surface-c:#FBF7EF;--surface-c-high:#F0E9DB;--surface-c-highest:#EAE2D2;
+  --outline:#9C9286;--outline-var:#E4DBCB;
+  --warn:#9A5B00;--warn-c:#FFE6C4;--ok:#1E7D52;
+  --grad:linear-gradient(120deg,#D11E6B,#4A4FB5);
+  --r-xs:8px;--r-s:12px;--r-m:16px;--r-l:22px;--r-xl:28px;
+  --serif:'Fraunces',Georgia,serif;
+  /* legacy aliases */
+  --or:#D11E6B;--bg:var(--surface-c-high);--cd:var(--surface-c-low);--tx:var(--on-surface);--ts:var(--on-surface-var);--tm:var(--on-surface-var);--bd:var(--outline-var);--bu:#4A4FB5;--dn:#BA1A1A;--pu:#8E2DA8;
+  --orBg:var(--primary-container);--buBg:var(--secondary-container);--okBg:#C7F0DB;--wnBg:var(--warn-c);--dnBg:var(--error-container);--puBg:var(--tertiary-container);
+}
+@media(prefers-color-scheme:dark){:root{
+  /* warm dark (not black) */
+  --primary:#FF8FB8;--on-primary:#5E0033;--primary-container:#8C1152;--on-primary-container:#FFD9E6;
+  --secondary:#BFC2FF;--secondary-container:#32379B;--on-secondary-container:#E0E0FF;
+  --tertiary:#EBADFF;--tertiary-container:#71158C;--on-tertiary-container:#F6D9FF;
+  --error:#FFB4AB;--error-container:#93000A;--on-error-container:#FFDAD6;
+  --surface:#1C1A17;--on-surface:#EDE6DC;--on-surface-var:#B8AFA2;
+  --surface-c-low:#262320;--surface-c:#2B2823;--surface-c-high:#34302A;--surface-c-highest:#3F3A33;
+  --outline:#988F83;--outline-var:#3A352F;
+  --warn:#FFB951;--warn-c:#5C3F00;--ok:#7FD9A8;
+  --or:#FF8FB8;--bu:#BFC2FF;--dn:#FFB4AB;--pu:#EBADFF;
+  --orBg:var(--primary-container);--buBg:var(--secondary-container);--okBg:#0C4A2C;--wnBg:var(--warn-c);--dnBg:var(--error-container);--puBg:var(--tertiary-container);
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--surface);color:var(--on-surface);overscroll-behavior:none}
+.ico{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}.ico svg{width:1em;height:1em;fill:currentColor;display:block}
+
+/* Top App Bar (M3 small, collapsing feel) */
+.topbar{background:var(--surface);position:sticky;top:0;z-index:100;padding:env(safe-area-inset-top,8px) 4px 0}
+.topbar-inner{max-width:720px;margin:0 auto;padding:8px 12px}
+.appbar{display:flex;align-items:center;justify-content:space-between;min-height:56px}
+.appbar-title{display:flex;align-items:center;gap:10px}
+.appbar-title .brand{font-family:var(--serif);font-size:24px;font-weight:700;letter-spacing:-.01em;color:var(--on-surface)}
+.appbar-title .logo-badge{width:36px;height:36px;border-radius:10px;background:var(--primary-container);display:flex;align-items:center;justify-content:center}
+.appbar-title .logo-badge .ico{color:var(--on-primary-container);font-size:22px}
+.status-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:9px;font-size:12px;font-weight:700;background:var(--surface-c-high);color:var(--on-surface)}
+.week-pill{display:flex;align-items:center;gap:8px}
+.week-pill .km{font-size:13px;color:var(--on-surface-var);font-weight:500}
+.week-pill .km b{color:var(--on-surface);font-weight:700}
+.week-track{width:54px;height:6px;background:var(--surface-c-high);border-radius:3px;overflow:hidden}
+.week-track>div{height:100%;background:var(--primary);border-radius:3px;transition:width .5s cubic-bezier(.2,0,0,1)}
+
+/* Main */
+.main{max-width:720px;margin:0 auto;padding:8px 16px calc(96px + env(safe-area-inset-bottom,0))}
+
+/* Bottom Navigation Bar (M3) */
+.navbar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--surface-c);display:flex;justify-content:space-around;align-items:center;height:80px;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -1px 0 var(--outline-var)}
+.navbar-inner{max-width:720px;margin:0 auto;width:100%;display:flex;justify-content:space-around}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 0 0;background:none;border:none;cursor:pointer;font-family:inherit;color:var(--on-surface-var);position:relative}
+.nav-item .pill{display:flex;align-items:center;justify-content:center;width:64px;height:32px;border-radius:16px;transition:background .2s}
+.nav-item .ico{font-size:24px}
+.nav-item .nav-label{font-size:12px;font-weight:600;letter-spacing:.01em}
+.nav-item.active{color:var(--on-surface)}
+.nav-item.active .pill{background:var(--primary-container)}
+.nav-item.active .ico{color:var(--primary)}
+.nav-item.active .nav-label{color:var(--on-surface)}
+
+/* Cards — M3 filled/elevated */
+.card{background:var(--surface-c-low);border-radius:var(--r-m);padding:16px;margin-bottom:12px}
+.card.elevated{background:var(--surface-c-low);box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.04)}
+.card h3{font-size:13px;font-weight:700;color:var(--on-surface-var);margin-bottom:12px;letter-spacing:.02em;text-transform:uppercase}
+
+/* Hero banner (primary container, not gradient clone) */
+.banner{background:var(--grad);color:#fff;border-radius:var(--r-l);padding:22px 24px;margin-bottom:16px;position:relative;overflow:hidden}
+.banner .bg-icon{position:absolute;right:-8px;bottom:-20px;font-size:130px;opacity:.13}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface-c-low);border-radius:var(--r-s);padding:14px 12px;text-align:center}
+.stat .label{font-size:11px;color:var(--on-surface-var);font-weight:500}
+.stat .val{font-family:var(--serif);font-size:24px;font-weight:600;margin:3px 0;color:var(--on-surface)}
+.stat .unit{font-size:10px;color:var(--on-surface-var)}
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;letter-spacing:.01em}
+.tip{border-radius:var(--r-s);padding:14px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5}
+
+/* Activity cards */
+.act-card{background:var(--surface-c-low);border-radius:var(--r-m);margin-bottom:10px;overflow:hidden;position:relative;transition:transform .15s,background .15s}
+.act-card:active{transform:scale(.985);background:var(--surface-c)}
+.act-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px}
+.act-icon{width:40px;height:40px;border-radius:12px;background:var(--tertiary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.act-icon .ico{color:var(--on-tertiary-container);font-size:22px}
+.act-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr))}
+.act-stats>div{padding:10px 16px}
+.act-stats .al{font-size:11px;color:var(--on-surface-var);font-weight:500}
+.act-stats .av{font-size:16px;font-weight:700;color:var(--on-surface)}
+.plan-item{background:var(--surface-c-low);border-radius:var(--r-s);border-left:4px solid var(--primary);padding:14px 16px;margin-bottom:8px;display:flex;gap:14px;align-items:flex-start}
+
+/* Forms — M3 outlined fields */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.form-grid label{font-size:12px;color:var(--on-surface-var);font-weight:500;display:block;margin-bottom:5px}
+.form-grid input,.form-grid select{background:var(--surface);border:1px solid var(--outline);border-radius:var(--r-xs);padding:12px 14px;font-size:15px;width:100%;outline:none;font-family:inherit;color:var(--on-surface)}
+.form-grid input:focus,.form-grid select:focus{border-color:var(--primary);border-width:2px;padding:11px 13px}
+
+/* Buttons — M3 */
+.btn{background:var(--primary);border:none;border-radius:20px;padding:12px 24px;color:var(--on-primary);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px;transition:filter .15s,transform .1s;position:relative;overflow:hidden}
+.btn:active{transform:scale(.97);filter:brightness(.92)}
+.btn .ico{font-size:18px}
+.btn-tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn-outline{background:transparent;border:1px solid var(--outline);color:var(--primary)}
+
+/* FAB */
+.fab{position:fixed;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:99;width:58px;height:58px;border-radius:19px;background:var(--grad);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px -4px rgba(209,30,107,.5);transition:transform .15s}
+.fab:active{transform:scale(.92)}
+.fab .ico{font-size:26px}
+
+.chart-box{position:relative;width:100%;height:200px;margin-bottom:8px}
+.sec-title{font-family:var(--serif);font-size:30px;font-weight:600;letter-spacing:-.01em;margin-bottom:2px;color:var(--on-surface)}
+.sec-sub{font-size:14px;color:var(--on-surface-var);margin-bottom:16px}
+.heatmap{display:flex;gap:3px;overflow-x:auto;padding-bottom:8px}
+.heatmap-col{display:flex;flex-direction:column;gap:3px}
+.heatmap-cell{width:14px;height:14px;border-radius:4px}
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.badge-item{padding:14px 10px;border-radius:var(--r-s);background:var(--surface-c-low);text-align:center}
+.badge-item.earned{background:var(--primary-container)}
+.badge-item.locked{opacity:.4}
+.hidden{display:none}
+.progress-bar{height:8px;background:var(--surface-c-high);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.2,0,0,1)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.tab-content{animation:fadeIn .35s cubic-bezier(.2,0,0,1)}
+.skeleton{background:linear-gradient(90deg,var(--surface-c) 25%,var(--surface-c-high) 50%,var(--surface-c) 75%);background-size:800px 100%;animation:shimmer 1.4s infinite;border-radius:var(--r-s)}
+.del-btn{background:none;border:none;color:var(--on-surface-var);cursor:pointer;padding:6px;display:flex;align-items:center;border-radius:50%}
+.del-btn .ico{font-size:20px}
+.help-tag{display:inline-flex;align-items:center;gap:3px;cursor:pointer;border-bottom:1px dashed var(--on-surface-var)}
+.help-tag::after{content:"ⓘ";font-size:13px;color:var(--tertiary);border:none;margin-left:2px}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease}
+/* Hero summary row (Progress) */
+.hero-summary{background:var(--surface-c-low);border-radius:var(--r-l);padding:4px;margin-bottom:16px;overflow:hidden}
+.hero-main{display:flex;align-items:center;gap:16px;padding:20px 20px 16px}
+.hero-main .big{font-family:var(--serif);font-size:44px;font-weight:600;line-height:1;color:var(--primary);letter-spacing:-.02em}
+.hero-main .big .u{font-size:16px;font-weight:500;color:var(--on-surface-var);margin-left:4px}
+.hero-main .meta{flex:1}
+.hero-main .meta .lbl{font-size:13px;color:var(--on-surface-var);font-weight:500}
+.hero-ring{width:64px;height:64px;flex-shrink:0}
+.hero-row{display:flex;border-top:1px solid var(--outline-var)}
+.hero-row .cell{flex:1;padding:14px 8px;text-align:center;border-right:1px solid var(--outline-var)}
+.hero-row .cell:last-child{border-right:none}
+.hero-row .cell .ci{color:var(--on-surface-var);margin-bottom:4px}
+.hero-row .cell .cv{font-size:17px;font-weight:700;color:var(--on-surface)}
+.hero-row .cell .cl{font-size:11px;color:var(--on-surface-var);font-weight:500;margin-top:1px}
+/* Scrollable nav (swipe) */
+.navbar.scrollable{padding:0}
+.navbar.scrollable .navbar-inner{justify-content:flex-start;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 4px}
+.navbar.scrollable .navbar-inner::-webkit-scrollbar{display:none}
+.navbar.scrollable .nav-item{flex:0 0 auto;min-width:72px;scroll-snap-align:center}
+.modal-card{background:var(--surface-c-high);border-radius:var(--r-xl) var(--r-xl) 0 0;max-width:720px;width:100%;max-height:75vh;overflow-y:auto;padding:20px 22px calc(32px + env(safe-area-inset-bottom,0));animation:fadeIn .25s cubic-bezier(.2,0,0,1)}
+.modal-card h2{font-family:var(--serif);font-size:22px;font-weight:600;margin-bottom:8px;color:var(--on-surface)}
+.modal-card .mdesc{font-size:14px;color:var(--on-surface-var);line-height:1.7;margin-bottom:16px}
+</style>
+<div id="helpModal" style="display:none"></div>
+</head>
+<body>
+<div class="topbar"><div class="topbar-inner">
+  <div class="appbar">
+    <div class="appbar-title">
+      <div class="logo-badge ico" style="font-size:22px"><svg viewBox="0 0 24 24" style="width:1em;height:1em;fill:var(--on-primary-container)"><path d="M13.5 5.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 4.6V9h2V6.1z"/></svg></div>
+      <span class="brand">RunTracker</span>
+      <span id="statusBadge" class="status-chip" style="cursor:pointer" onclick="showHelp('status')"></span>
+    </div>
+    <div class="week-pill">
+      <span id="weekMini" class="km"></span>
+      <div class="week-track"><div id="weekBar" style="width:0"></div></div>
+    </div>
+  </div>
+</div></div>
+<div class="main" id="main"></div>
+<button class="fab" id="fab" onclick="fabAction()"></button>
+<nav class="navbar scrollable"><div class="navbar-inner" id="navbar"></div></nav>
+
+<script>
+// ═══ SVG ICONS (inline, no external font dependency) ═══
+const ICONS={
+  home:'<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
+  monitoring:'<svg viewBox="0 0 24 24"><path d="M3 17.25l5-5 3 3 6.5-6.5L20 6.75V11h-2V9.5l-7 7-3-3L4.5 18z M3 19h18v2H3z"/></svg>',
+  heart:'<svg viewBox="0 0 24 24"><path d="M12 21l-1.5-1.4C5.4 15 2 11.9 2 8.2 2 5.4 4.2 3.2 7 3.2c1.6 0 3.1.7 4 1.9.9-1.2 2.4-1.9 4-1.9 2.8 0 5 2.2 5 5 0 3.7-3.4 6.8-8.5 11.4z"/></svg>',
+  brain:'<svg viewBox="0 0 24 24"><path d="M9 2a3 3 0 0 0-3 3 3 3 0 0 0-2 5.2A3 3 0 0 0 5 16a3 3 0 0 0 4 2.8V20a1 1 0 0 0 2 0V4a2 2 0 0 0-2-2zm6 0a2 2 0 0 0-2 2v16a1 1 0 0 0 2 0v-1.2A3 3 0 0 0 19 16a3 3 0 0 0 1-5.8A3 3 0 0 0 18 5a3 3 0 0 0-3-3z"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  run:'<svg viewBox="0 0 24 24"><path d="M13.5 5.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 4.6V9h2V6.1z"/></svg>',
+  terrain:'<svg viewBox="0 0 24 24"><path d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22z"/></svg>',
+  trophy:'<svg viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5a2 2 0 0 0-2 2v1a4 4 0 0 0 4 4h.3A5 5 0 0 0 11 16.9V19H8v2h8v-2h-3v-2.1A5 5 0 0 0 16.7 12H17a4 4 0 0 0 4-4V7a2 2 0 0 0-2-2zM5 8V7h2v3a2 2 0 0 1-2-2zm14 0a2 2 0 0 1-2 2V7h2z"/></svg>',
+  target:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-12a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>',
+  calendar:'<svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14zm0-12H5V6h14z"/></svg>',
+  download:'<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z"/></svg>',
+  person:'<svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>',
+  sync:'<svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6a6 6 0 0 1 6 6c0 1-.2 1.9-.7 2.7l1.5 1.5A8 8 0 0 0 12 4zm0 14a6 6 0 0 1-6-6c0-1 .2-1.9.7-2.7L5.2 7.8A8 8 0 0 0 12 20v3l4-4-4-4z"/></svg>',
+  add:'<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>',
+  close:'<svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24"><path d="M10 6 8.6 7.4 13.2 12l-4.6 4.6L10 18l6-6z"/></svg>',
+  fire:'<svg viewBox="0 0 24 24"><path d="M13.5 1s1.5 2.5 1.5 5c0 2-1.3 3.5-3 3.5S9 8 9 6.5c0-.5.1-1 .3-1.5C7.3 6.5 6 9 6 12a6 6 0 0 0 12 0c0-3.8-2.5-7.5-4.5-11z"/></svg>',
+  medal:'<svg viewBox="0 0 24 24"><path d="M12 14a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm-3 2.5L7 22l5-2 5 2-2-7.5A6.9 6.9 0 0 1 12 16a6.9 6.9 0 0 1-3-1.5z"/></svg>',
+  badge:'<svg viewBox="0 0 24 24"><path d="m12 1 3 5.5 6 1-4.5 4.3L17.5 18 12 15l-5.5 3 1-6.2L3 7.5l6-1z"/></svg>',
+  info:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>',
+  bed:'<svg viewBox="0 0 24 24"><path d="M21 10V8a2 2 0 0 0-2-2h-5v5H4V6H2v12h2v-3h16v3h2v-6a2 2 0 0 0-1-2zM7 7a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>',
+  clock:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7z"/></svg>',
+  speed:'<svg viewBox="0 0 24 24"><path d="M12 4a9 9 0 0 0-9 9 9 9 0 0 0 1.5 5h15A9 9 0 0 0 21 13a9 9 0 0 0-9-9zm0 2a7 7 0 0 1 6.7 5h-2.8a4 4 0 0 0-1.3-1.5l1.6-3.1A7 7 0 0 0 12 6zm-1 .2L12.6 9.3A4 4 0 0 0 8.1 11H5.3A7 7 0 0 1 11 6.2zM12 11a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>',
+};
+function svg(name,size){const s=size||20;return "<span class='ico' style='font-size:"+s+"px'>"+(ICONS[name]||"")+"</span>"}
+
+
+const GLOSS={
+  trimp:{t:"TRIMP — Training Impulse",d:"Mesura la càrrega d'entrenament combinant la durada i la intensitat (freqüència cardíaca). Un TRIMP alt indica una sessió molt exigent. Desenvolupat per Banister (1975).<br><br><b>Valors orientatius:</b><br>• &lt;50: Sessió lleugera / recuperació<br>• 50–100: Sessió moderada<br>• 100–150: Sessió dura<br>• &gt;150: Sessió molt exigent<br><br><b>Fórmula:</b> TRIMP = minuts × %FCReserva × 0.64 × e^(1.92 × %FCReserva)"},
+  ctl:{t:"CTL — Chronic Training Load (Fitness)",d:"Mitjana exponencial de la càrrega d'entrenament dels últims ~42 dies. Representa la teva <b>fitness acumulada</b>. Puja lentament amb entrenament consistent i baixa quan deixes d'entrenar.<br><br>Un CTL alt = has entrenat molt i de forma sostinguda."},
+  atl:{t:"ATL — Acute Training Load (Fatiga)",d:"Mitjana exponencial de la càrrega dels últims ~7 dies. Representa la <b>fatiga recent</b>. Puja ràpidament després de sessions dures i baixa ràpid amb descans.<br><br>Un ATL alt = estàs fatigat pels entrenaments recents."},
+  tsb:{t:"TSB — Training Stress Balance (Forma)",d:"TSB = Fitness (CTL) − Fatiga (ATL). Indica si estàs <b>fresc o fatigat</b>.<br><br><b>Valors:</b><br>• TSB positiu (&gt;10): Estàs fresc, bon moment per competir<br>• TSB ~0: Equilibri entre fitness i fatiga<br>• TSB negatiu (&lt;-10): Fatiga acumulada, cal recuperar<br><br>Per fer 'peaking' (arribar en forma a una cursa), busca un TSB positiu amb CTL alt."},
+  acwr:{t:"ACWR — Acute:Chronic Workload Ratio",d:"Ràtio entre la càrrega de l'última setmana i la mitjana de les últimes 4 setmanes. Mesura si estàs augmentant la càrrega massa ràpid.<br><br><b>Zones:</b><br>• &lt;0.8: Càrrega baixa, possible desentrenament<br>• <b>0.8–1.3: Zona òptima ✓</b><br>• 1.3–1.5: Zona de precaució ⚠<br>• &gt;1.5: Alt risc de lesió 🔴<br><br>La regla del 10%: no incrementis més d'un 10% setmanal."},
+  vo2:{t:"VO₂max — Consum Màxim d'Oxigen",d:"Capacitat màxima del cos per transportar i utilitzar oxigen durant l'exercici. És el <b>millor indicador de fitness aeròbic</b>.<br><br><b>Valors típics (homes):</b><br>• &lt;40: Principiant<br>• 40–45: Acceptable<br>• 45–50: Bo<br>• 50–55: Molt bo<br>• &gt;55: Excel·lent / elit amateur<br><br>L'estimació es basa en la relació entre ritme i FC (mètode Jack Daniels)."},
+  gap:{t:"GAP — Grade Adjusted Pace",d:"Ritme equivalent en terreny pla. Ajusta el teu pace real tenint en compte el <b>desnivell</b>.<br><br>Exemple: si corres a 6:00/km amb 5% de pendent, el teu GAP podria ser ~5:05/km — és a dir, l'esforç equivalent en pla.<br><br>Útil per comparar sessions amb desnivell diferent i per saber si realment vas més ràpid o era el terreny."},
+  zones:{t:"Zones de Freqüència Cardíaca",d:"Rangs d'intensitat basats en la teva FC Màxima i FC Repòs (mètode Karvonen):<br><br>• <b>Z1 Recuperació</b> (&lt;60% FCR): Molt fàcil, recuperació activa<br>• <b>Z2 Aeròbic</b> (60-70% FCR): Base aeròbica, ritme conversacional. La zona més important per salut.<br>• <b>Z3 Tempo</b> (70-80% FCR): Còmodament dur, millora resistència<br>• <b>Z4 Llindar</b> (80-90% FCR): Dur, prop del llindar anaeròbic<br>• <b>Z5 VO₂max</b> (&gt;90% FCR): Molt dur, intervals curts<br><br><b>Model 80/20:</b> ~80% del volum en Z1-Z2, ~20% en Z3-Z5."},
+  ff:{t:"Fitness & Freshness (Banister)",d:"Model matemàtic que prediu la teva <b>forma esportiva</b> combinant tres mètriques:<br><br>• <b>Fitness (CTL)</b>: Acumulació d'entrenament (~42 dies)<br>• <b>Fatiga (ATL)</b>: Cansament recent (~7 dies)<br>• <b>Forma (TSB)</b>: Fitness − Fatiga<br><br>Desenvolupat per Eric Banister el 1975 i adoptat per Strava, TrainingPeaks i Garmin. El gràfic mostra l'evolució de les tres corbes al llarg del temps."},
+  efficiency:{t:"Eficiència Cardíaca",d:"Ràtio entre ritme (segons/km) i FC mitjana (bpm). Un valor <b>més baix</b> és millor: significa que corres més ràpid amb menys esforç cardíac.<br><br>Exemple: 3.5 s/bpm és més eficient que 4.0 s/bpm.<br><br>Si l'eficiència millora al llarg del temps amb el mateix ritme, indica <b>adaptació aeròbica</b> (el cor bombeja més sang per batec)."},
+  intensity:{t:"Intensitat — % FC Màxima",d:"Percentatge de la teva freqüència cardíaca mitjana respecte a la FC màxima configurada.<br><br>• &lt;65%: Molt fàcil (recuperació)<br>• 65–75%: Fàcil (Z2 aeròbic)<br>• 75–82%: Moderat (tempo)<br>• 82–90%: Dur (llindar)<br>• &gt;90%: Molt dur (VO₂max)<br><br>Per mantenir forma i salut, la majoria de sessions haurien de ser al 65-75%."},
+  monotony:{t:"Monotonia d'Entrenament",d:"Mesura quant de <b>semblants</b> són les teves sessions dia a dia. Es calcula com la mitjana diària de TRIMP dividida per la desviació estàndard.<br><br>• &lt;1.5: Bona variabilitat ✓<br>• 1.5–2.0: Precaució<br>• &gt;2.0: Monotonia alta — risc de sobreentrenament<br><br>Solució: alterna sessions llargues/curtes i fàcils/dures."},
+  re:{t:"Esforç Relatiu Setmanal",d:"Suma del TRIMP de totes les sessions d'una setmana. La <b>banda</b> (±20% de la mitjana de 3 setmanes) indica si estàs entrenant dins la normalitat.<br><br>• Dins la banda: Consistent ✓<br>• Per sobre: Setmana dura, cal recuperar<br>• Per sota: Setmana fàcil (pot ser descàrrega planificada)"},
+  pr:{t:"Personal Records (Millors Marques)",d:"Les millors marques estimades per a cada distància de referència (1K, 5K, 10K, Mitja, Marató), calculades a partir del ritme i temps de les teves activitats.<br><br>Es busca la millor combinació pace×distància per a cada distància estàndard."},
+  riegel:{t:"Predicció de Cursa (Riegel)",d:"Fórmula de Pete Riegel (1977) per predir temps de cursa a altres distàncies basant-se en un resultat conegut:<br><br><b>T₂ = T₁ × (D₂/D₁)^1.06</b><br><br>Exemple: si fas 5K en 25:00, prediu ~52:30 per 10K.<br><br>L'exponent 1.06 reflecteix que no pots mantenir el mateix ritme a distàncies més llargues."},
+  streak:{t:"Ratxa (Running Streak)",d:"Nombre de <b>dies consecutius</b> amb almenys una activitat registrada.<br><br>Les ratxes motiven la consistència, però recorda: el descans és part de l'entrenament. No sacrifiquis la recuperació per mantenir una ratxa."},
+  badges:{t:"Badges (Assoliments)",d:"Fites d'entrenament que es desbloquegen automàticament al complir certs objectius: distàncies acumulades, ratxes, desnivell, velocitat, volum...<br><br>Inspirats en Smashrun i Strava, serveixen com a motivació extra per mantenir la consistència."},
+  status:{t:"Training Status (Estat d'Entrenament)",d:"Classificació automàtica de l'estat actual basada en tendències de Fitness i Fatiga:<br><br>• 🟢 <b>Productiu</b>: CTL pujant, estàs millorant<br>• 🔵 <b>Manteniment</b>: Fitness estable<br>• 🟡 <b>Recuperació</b>: Càrrega reduïda, el cos descansa<br>• ⭐ <b>Peaking</b>: Fitness alt + fatiga baixa = forma màxima<br>• 🔴 <b>Sobrecarregat</b>: TSB molt negatiu, cal descansar<br>• 📉 <b>Desentrenament</b>: Sense activitat recent<br><br>Inspirat en Garmin Training Status (Firstbeat Analytics)."},
+  easytr:{t:"Easy TRIMP Recomanat",d:"TRIMP màxim suggerit per a la sessió de demà que mantindria el TSB (Training Stress Balance) a zero — és a dir, sense acumular més fatiga.<br><br>Si estàs fatigat (TSB negatiu), et recomana dies de descans en lloc d'un valor TRIMP."},
+  heatmap:{t:"Calendari Heatmap",d:"Visualització dels últims 6 mesos on cada quadrat representa un dia. La <b>intensitat del color</b> indica els quilòmetres recorreguts aquell dia.<br><br>Permet veure patrons de consistència, setmanes de càrrega/descàrrega, i períodes d'inactivitat d'un cop d'ull."},
+  drift:{t:"Deriva Cardíaca (Decoupling)",d:"Mesura quant puja la FC durant una sessió a esforç constant. Compara la relació velocitat/FC de la 1a meitat vs la 2a.<br><br><b>Decoupling (%):</b><br>• &lt;5%: Excel·lent resistència aeròbica ✓<br>• 5–10%: Acceptable, normal en tirades llargues<br>• &gt;10%: Alta — fatiga, deshidratació, calor o ritme massa ràpid<br><br>Un dels millors indicadors de condició aeròbica i adaptació a fons."},
+  mmp:{t:"Corba de Millors Esforços (Mean Maximal Pace)",d:"Mostra el millor ritme sostingut per a cada durada dins l'activitat (1, 2, 5, 10, 20, 30, 60 min).<br><br>És l'equivalent running de la 'power curve' del ciclisme. Permet veure el teu perfil (velocista vs fondista), si millores en esforços curts o llargs, i planificar entrenaments.<br><br>Es calcula amb finestra lliscant sobre la velocitat segon a segon."},
+  monotony:{t:"Monotonia i Strain",d:"<b>Monotonia</b>: com de semblants són les sessions dia a dia (mitjana TRIMP / desviació estàndard).<br>• &lt;1.5: Bona variabilitat ✓<br>• 1.5–2.0: Precaució<br>• &gt;2.0: Risc de sobreentrenament<br><br><b>Strain</b>: càrrega setmanal × monotonia. Un strain alt amb monotonia alta és el combinat de més risc de lesió segons Foster (1998)."},
+  racepred:{t:"Predictor de Cursa Avançat",d:"Combina dos models de predicció i ajusta pel desnivell:<br><br>• <b>Riegel:</b> T₂ = T₁ × (D₂/D₁)^1.06<br>• <b>VDOT (Daniels):</b> model amb factor de fatiga 1.07<br><br>La <b>mitjana</b> dels dos dona una estimació en pla. Després s\x27afegeix una penalització de ~0.6s per metre de desnivell positiu (estimació conservadora per trail).<br><br>Útil per planificar curses de muntanya on el ritme pla no serveix."}
+};
+
+function showHelp(key){
+  const g=GLOSS[key];if(!g)return;
+  const el=document.getElementById("helpModal");
+  el.style.display="block";
+  el.innerHTML="<div class='modal-overlay' onclick='hideHelp()'><div class='modal-card' onclick='event.stopPropagation()'><div style='width:32px;height:4px;background:var(--outline-var);border-radius:2px;margin:0 auto 18px'></div><h2>"+g.t+"</h2><div class='mdesc'>"+g.d+"</div><button class='btn' onclick='hideHelp()' style='width:100%'>Entesos</button></div></div>";
+}
+function hideHelp(){document.getElementById("helpModal").style.display="none"}
+function ht(key,label){return "<span class='help-tag' onclick='event.stopPropagation();showHelp(\""+key+"\")'>"+label+"</span>"}
+
+// ═══ STATE ═══
+const TABS=[
+  {id:"feed",l:"Activitat",ic:"home"},
+  {id:"prog",l:"Progrés",ic:"monitoring"},
+  {id:"fit",l:"Fitness",ic:"heart"},
+  {id:"ai",l:"AI Coach",ic:"brain"},
+  {id:"rec",l:"Rècords",ic:"trophy"},
+  {id:"plan",l:"Pla",ic:"target"},
+  {id:"cal",l:"Calendari",ic:"calendar"},
+  {id:"imp",l:"Importar",ic:"download"},
+  {id:"cfg",l:"Perfil",ic:"person"}
+];
+const ALL_TABS=TABS;
+const DSET={hrMax:190,hrRest:50,weeklyTarget:45,yearlyGoal:2200,name:"Francesc",weight:70,zones:null,stravaClientId:"220720",stravaSecret:"",stravaToken:"",stravaRefresh:"",stravaExpires:0,predKm:21.1,predAsc:500,aiKey:"",aiModel:"claude-haiku-4-5-20251001",aiProvider:"anthropic"};
+let acts=[], settings={...DSET}, curTab="feed", charts={}, selectedAct=null;
+
+function load(){try{acts=JSON.parse(localStorage.getItem("rt4:a"))||[]}catch{acts=[]}try{settings={...DSET,...JSON.parse(localStorage.getItem("rt4:s"))}}catch{settings={...DSET}}}
+function saveActs(){localStorage.setItem("rt4:a",JSON.stringify(acts))}
+function saveSettings(){localStorage.setItem("rt4:s",JSON.stringify(settings))}
+
+// ═══ UTILS ═══
+const fP=s=>{if(!s||s<=0)return"--:--";return Math.floor(s/60)+":"+String(Math.round(s%60)).padStart(2,"0")};
+const fD=s=>{if(!s)return"--:--";const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),c=Math.round(s%60);return h>0?h+"h "+m+"m":m+":"+String(c).padStart(2,"0")};
+const fDH=s=>{if(!s)return"--:--:--";const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),c=Math.round(s%60);return h+":"+String(m).padStart(2,"0")+":"+String(c).padStart(2,"0")};
+const fDL=s=>{if(!s)return"--";const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?h+"h"+m+"m":m+"min"};
+const pP=s=>{if(!s)return null;const c=String(s).replace(",",".").trim(),m=c.match(/^(\d+):(\d{2})$/);if(m)return+m[1]*60+ +m[2];const n=parseFloat(c);return isNaN(n)?null:n*60};
+const pD=s=>{if(!s)return null;const t=String(s).trim(),h=t.match(/^(\d+):(\d{2}):(\d{2})$/);if(h)return+h[1]*3600+ +h[2]*60+ +h[3];const m=t.match(/^(\d+):(\d{2})$/);if(m)return+m[1]*60+ +m[2];const n=parseFloat(t);return isNaN(n)?null:n};
+const karv=(mx,r)=>[Math.round(r+(mx-r)*.6),Math.round(r+(mx-r)*.7),Math.round(r+(mx-r)*.8),Math.round(r+(mx-r)*.9)];
+const hZ=(hr,mx,r,z)=>{const b=z||karv(mx,r);return hr<b[0]?0:hr<b[1]?1:hr<b[2]?2:hr<b[3]?3:4};
+const cTR=(dm,hr,mx,r)=>{if(!dm||!hr||!mx||!r)return null;const x=(hr-r)/(mx-r);return x>0&&x<1?Math.round(dm*x*.64*Math.exp(1.92*x)):null};
+const wK=d=>{const dt=new Date(d),dy=dt.getDay(),df=dt.getDate()-dy+(dy===0?-6:1);const m=new Date(dt);m.setDate(df);return m.toISOString().slice(0,10)};
+const wL=w=>{const d=new Date(w),ms=["gen","feb","mar","abr","mai","jun","jul","ago","set","oct","nov","des"];return d.getDate()+" "+ms[d.getMonth()]};
+const dS=ds=>Math.floor((Date.now()-new Date(ds).getTime())/864e5);
+const rD=ds=>{const d=dS(ds);if(d===0)return"Avui";if(d===1)return"Ahir";if(d<7)return"Fa "+d+" dies";const dt=new Date(ds),ms=["gen","feb","mar","abr","mai","jun","jul","ago","set","oct","nov","des"];return dt.getDate()+" "+ms[dt.getMonth()]};
+const dateStr=d=>d.toISOString().slice(0,10);
+const estVO2=(p,hr,mx)=>{if(!p||!hr||!mx||p<=0)return null;const v=(1000/p)*60,vo2=-4.6+.182258*v+.000104*v*v,r=hr/mx;if(r<.5||r>1)return null;const pv=(r-.3727)/.6463;return pv>0&&pv<1.1?Math.round(vo2/pv*10)/10:null};
+
+// ═══ CSV PARSER ═══
+const CMAP={date:["Date","Fecha","Data","Activity Date"],type:["Activity Type","Tipo de actividad"],distance:["Distance","Distancia","Distància"],duration:["Time","Tiempo","Temps","Moving Time","Elapsed Time"],avgHR:["Avg HR","FC media","Average Heart Rate (bpm)"],maxHR:["Max HR","FC máxima"],pace:["Avg Pace","Ritmo medio"],ascent:["Total Ascent","Ascenso total","Elevation Gain"],title:["Title","Título","Name","Activity Name","Nombre"],cadence:["Avg Run Cadence","Cadencia media carrera"]};
+const fC=(hs,cs)=>{for(const c of cs){const f=hs.find(h=>h.trim().toLowerCase()===c.toLowerCase());if(f)return f}return null};
+const RT=["running","trail running","treadmill","carrera","trail","cinta","cursa","córrer"];
+const isR=t=>!t||RT.some(r=>String(t).toLowerCase().includes(r));
+
+function parseCSV(text){
+  const res=Papa.parse(text,{header:true,skipEmptyLines:true});
+  if(!res.data||!res.data.length)return[];
+  const hs=res.meta.fields||[],cm={};
+  for(const[k,v]of Object.entries(CMAP))cm[k]=fC(hs,v);
+  const out=[];
+  for(const row of res.data){
+    if(!isR(cm.type?row[cm.type]:null))continue;
+    const dr=cm.date?row[cm.date]:null;if(!dr)continue;
+    let date;try{date=new Date(dr);if(isNaN(date)){const p=dr.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);if(p)date=new Date(p[3],p[2]-1,p[1])}}catch{continue}
+    if(isNaN(date))continue;
+    const num=k=>{const c=cm[k];if(!c)return null;const v=parseFloat(String(row[c]||"").replace(",",".").replace(/[^\d.\-]/g,""));return isNaN(v)?null:v};
+    const dist=num("distance"),dur=pD(cm.duration?row[cm.duration]:null),avgHR=num("avgHR"),maxHR=num("maxHR"),asc=num("ascent"),cad=num("cadence");
+    let pace=pP(cm.pace?row[cm.pace]:null);
+    if(!pace&&dist&&dur&&dist>0)pace=dur/dist;
+    const trimp=cTR(dur?dur/60:null,avgHR,settings.hrMax,settings.hrRest);
+    const vo2=estVO2(pace,avgHR,settings.hrMax);
+    out.push({id:date.toISOString()+"-"+Math.random().toString(36).slice(2,6),date:dateStr(date),title:cm.title?row[cm.title]||"Cursa":"Cursa",distance:dist?Math.round(dist*100)/100:null,duration:dur,avgHR:avgHR?Math.round(avgHR):null,maxHR:maxHR?Math.round(maxHR):null,pace:pace,ascent:asc?Math.round(asc):null,cadence:cad?Math.round(cad):null,trimp:trimp,vo2:vo2,hrZone:avgHR?hZ(avgHR,settings.hrMax,settings.hrRest,settings.zones):null,source:"csv"});
+  }
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+// ═══ ANALYTICS ═══
+function getWeekly(){
+  const w={};
+  acts.forEach(a=>{const wk=wK(a.date);if(!w[wk])w[wk]={week:wk,km:0,n:0,trimp:0,pcs:[],hrs:[],vo2s:[]};w[wk].km+=a.distance||0;w[wk].n++;w[wk].trimp+=a.trimp||0;if(a.pace)w[wk].pcs.push(a.pace);if(a.avgHR)w[wk].hrs.push(a.avgHR);if(a.vo2)w[wk].vo2s.push(a.vo2)});
+  return Object.values(w).map(x=>({...x,km:Math.round(x.km*10)/10,avgP:x.pcs.length?x.pcs.reduce((s,v)=>s+v,0)/x.pcs.length:null,avgHR:x.hrs.length?Math.round(x.hrs.reduce((s,v)=>s+v,0)/x.hrs.length):null,avgVO2:x.vo2s.length?Math.round(x.vo2s.reduce((s,v)=>s+v,0)/x.vo2s.length*10)/10:null})).sort((a,b)=>a.week.localeCompare(b.week)).slice(-16);
+}
+function calcFF(){
+  if(!acts.length)return[];
+  const sorted=[...acts].sort((a,b)=>a.date.localeCompare(b.date));
+  const first=new Date(sorted[0].date),today=new Date(),days=Math.ceil((today-first)/864e5)+1;
+  const daily={};sorted.forEach(a=>{daily[a.date]=(daily[a.date]||0)+(a.trimp||(a.distance||0)*5)});
+  let ctl=0,atl=0;const data=[];
+  for(let i=0;i<days;i++){const d=new Date(first);d.setDate(d.getDate()+i);const ds=dateStr(d);const tr=daily[ds]||0;ctl=ctl*(1-1/42)+tr/42;atl=atl*(1-1/7)+tr/7;if(i%3===0||i===days-1)data.push({date:ds,label:wL(ds),ctl:Math.round(ctl*10)/10,atl:Math.round(atl*10)/10,tsb:Math.round((ctl-atl)*10)/10})}
+  return data;
+}
+function calcACWR(){const a7=acts.filter(a=>dS(a.date)<=7).reduce((s,a)=>s+(a.trimp||(a.distance||0)*5),0);const c28=acts.filter(a=>dS(a.date)<=28).reduce((s,a)=>s+(a.trimp||(a.distance||0)*5),0)/4;return c28>0?Math.round(a7/c28*100)/100:null}
+
+// ═══ F6: MONOTONIA + STRAIN ═══
+function calcMonotony(){
+  const r28=acts.filter(a=>dS(a.date)<=28);
+  if(r28.length<5)return null;
+  const daily={};
+  for(let i=0;i<28;i++){const d=new Date();d.setDate(d.getDate()-i);daily[dateStr(d)]=0}
+  r28.forEach(a=>{daily[a.date]=(daily[a.date]||0)+(a.trimp||(a.distance||0)*5)});
+  const loads=Object.values(daily);
+  const mean=loads.reduce((s,v)=>s+v,0)/loads.length;
+  const std=Math.sqrt(loads.reduce((s,v)=>s+(v-mean)**2,0)/loads.length);
+  const monotony=std>0?Math.round(mean/std*100)/100:0;
+  const weeklyLoad=loads.slice(0,7).reduce((s,v)=>s+v,0);
+  const strain=Math.round(weeklyLoad*monotony);
+  return{monotony,strain,mean:Math.round(mean)};
+}
+
+// ═══ F1: DERIVA CARDÍACA ═══
+function calcCardiacDrift(streams){
+  if(!streams||!streams.heartrate||!streams.velocity_smooth)return null;
+  const hr=streams.heartrate.data,vel=streams.velocity_smooth.data;
+  if(!hr||!vel||hr.length<60)return null;
+  const half=Math.floor(hr.length/2);
+  // First half
+  let hr1=0,v1=0,n1=0;
+  for(let i=0;i<half;i++){if(hr[i]>0&&vel[i]>0.5){hr1+=hr[i];v1+=vel[i];n1++}}
+  // Second half
+  let hr2=0,v2=0,n2=0;
+  for(let i=half;i<hr.length;i++){if(hr[i]>0&&vel[i]>0.5){hr2+=hr[i];v2+=vel[i];n2++}}
+  if(n1<10||n2<10)return null;
+  const avgHr1=hr1/n1,avgHr2=hr2/n2,avgV1=v1/n1,avgV2=v2/n2;
+  // Pa:Hr ratio (pace per HR) - decoupling
+  const ratio1=avgV1/avgHr1,ratio2=avgV2/avgHr2;
+  const decoupling=Math.round((ratio1-ratio2)/ratio1*1000)/10;
+  return{
+    drift:Math.round((avgHr2-avgHr1)*10)/10,
+    decoupling:decoupling,
+    hr1:Math.round(avgHr1),hr2:Math.round(avgHr2),
+    v1:Math.round(avgV1*100)/100,v2:Math.round(avgV2*100)/100
+  };
+}
+
+// ═══ F2: GAP SEGMENTAT (Minetti) ═══
+function minettiCost(grade){
+  const g=grade/100;
+  return 155.4*g**5-30.4*g**4-43.3*g**3+46.3*g**2+19.5*g+3.6;
+}
+function calcSegmentedGAP(streams){
+  if(!streams||!streams.grade_smooth||!streams.velocity_smooth||!streams.distance)return null;
+  const grade=streams.grade_smooth.data,vel=streams.velocity_smooth.data,dist=streams.distance.data;
+  if(!grade||!vel||grade.length<30)return null;
+  const flatCost=minettiCost(0);
+  let totalTime=0,totalEquivDist=0,realDist=0;
+  for(let i=1;i<vel.length;i++){
+    if(vel[i]>0.5){
+      const dt=1; // 1 sec resolution assumed
+      const dd=vel[i]*dt;
+      realDist+=dd;
+      const cost=minettiCost(grade[i]||0);
+      const equivFactor=cost/flatCost;
+      totalEquivDist+=dd*equivFactor;
+      totalTime+=dt;
+    }
+  }
+  if(realDist<100)return null;
+  const realPace=totalTime/(realDist/1000);
+  const gapPace=totalTime/(totalEquivDist/1000);
+  return{realPace:Math.round(realPace),gapPace:Math.round(gapPace),diff:Math.round(realPace-gapPace)};
+}
+
+// ═══ F3: CORBA DE MILLORS ESFORÇOS (Mean Maximal Pace) ═══
+function calcMMP(streams){
+  if(!streams||!streams.velocity_smooth||!streams.time)return null;
+  const vel=streams.velocity_smooth.data,time=streams.time.data;
+  if(!vel||vel.length<60)return null;
+  const durations=[60,120,300,600,1200,1800,3600];
+  const labels=["1min","2min","5min","10min","20min","30min","60min"];
+  const result=[];
+  durations.forEach((dur,di)=>{
+    if(vel.length<dur)return;
+    let bestAvg=0;
+    // Sliding window
+    let sum=0;
+    for(let i=0;i<dur;i++)sum+=vel[i]||0;
+    bestAvg=sum/dur;
+    for(let i=dur;i<vel.length;i++){
+      sum+=( vel[i]||0)-(vel[i-dur]||0);
+      const avg=sum/dur;
+      if(avg>bestAvg)bestAvg=avg;
+    }
+    if(bestAvg>0.5){
+      const pace=1000/bestAvg; // sec/km
+      result.push({dur,label:labels[di],pace:Math.round(pace),speed:Math.round(bestAvg*100)/100});
+    }
+  });
+  return result.length?result:null;
+}
+
+// ═══ F4: PREDICTOR MULTI-MODEL ═══
+function vdotPredict(t1,d1,d2){
+  // Daniels VDOT approximation via velocity at vVO2max
+  const v1=d1/t1; // m/s
+  // Riegel-based with Daniels fatigue adjustment
+  return t1*Math.pow(d2/d1,1.07);
+}
+function calcMultiPredict(prs,targetKm,targetAscent){
+  let ref=null;
+  const dists=[{n:"1 km",k:1},{n:"5 km",k:5},{n:"10 km",k:10},{n:"Mitja",k:21.0975},{n:"Marató",k:42.195}];
+  for(const d of dists){const p=prs[d.n];if(p)ref={t:p.time,d:d.k}}
+  if(!ref)return null;
+  const riegel=ref.t*Math.pow(targetKm/ref.d,1.06);
+  const vdot=vdotPredict(ref.t,ref.d,targetKm);
+  // Elevation adjustment: ~6-8 sec per 10m D+ for trail (conservative)
+  const elevPenalty=(targetAscent||0)*0.6;
+  const avg=(riegel+vdot)/2;
+  return{
+    riegel:Math.round(riegel),
+    vdot:Math.round(vdot),
+    avg:Math.round(avg),
+    withElev:Math.round(avg+elevPenalty),
+    elevPenalty:Math.round(elevPenalty)
+  };
+}
+
+function getStatus(ff){if(ff.length<14)return{s:"Insuficient",c:"var(--tm)",i:"❓",d:"Mínim 2 setmanes de dades"};const l=ff[ff.length-1],p=ff.length>10?ff[ff.length-10]:ff[0],t=l.ctl-p.ctl;const r7=acts.filter(a=>dS(a.date)<=7);if(r7.length===0&&l.atl<5)return{s:"Desentrenament",c:"var(--dn)",i:"📉",d:"Sense activitat recent"};if(l.tsb>15&&l.ctl>20)return{s:"Peaking",c:"var(--bu)",i:"⭐",d:"Fresc i en forma!"};if(l.tsb<-20)return{s:"Sobrecarregat",c:"var(--dn)",i:"🔴",d:"Fatiga alta. Descansa."};if(t>1)return{s:"Productiu",c:"var(--ok)",i:"🟢",d:"Fitness pujant!"};if(Math.abs(t)<=1&&l.ctl>10)return{s:"Manteniment",c:"var(--bu)",i:"🔵",d:"Fitness estable."};if(t<-1)return{s:"Recuperació",c:"var(--wn)",i:"🟡",d:"Cos recuperant-se."};return{s:"Base",c:"var(--ts)",i:"⚪",d:"Construint base."}}
+function calcPRs(){const prs={};const dists=[{n:"1 km",k:1},{n:"5 km",k:5},{n:"10 km",k:10},{n:"Mitja",k:21.0975},{n:"Marató",k:42.195}];dists.forEach(rd=>{const el=acts.filter(a=>a.distance&&a.duration&&a.distance>=rd.k*.95);let best=null;el.forEach(a=>{const t=(a.pace||a.duration/a.distance)*rd.k;if(!best||t<best.time)best={time:t,date:a.date}});prs[rd.n]=best});return prs}
+function calcPredictions(prs){const dists=[{n:"1 km",k:1},{n:"5 km",k:5},{n:"10 km",k:10},{n:"Mitja",k:21.0975},{n:"Marató",k:42.195}];let ref=null;for(const d of dists){const p=prs[d.n];if(p)ref={t:p.time,d:d.k}}if(!ref)return null;return dists.map(d=>({n:d.n,k:d.k,t:Math.round(ref.t*Math.pow(d.k/ref.d,1.06))}))}
+function calcStreaks(){if(!acts.length)return{cur:0,best:0};const dates=[...new Set(acts.map(a=>a.date))].sort();let c=1,b=1;for(let i=1;i<dates.length;i++){const diff=Math.round((new Date(dates[i])-new Date(dates[i-1]))/864e5);if(diff===1){c++;if(c>b)b=c}else c=1}const last=dates[dates.length-1];return{cur:dS(last)<=1?c:0,best:b}}
+function getS28(){const r=acts.filter(a=>dS(a.date)<=28);return{km:r.reduce((s,a)=>s+(a.distance||0),0),dur:r.reduce((s,a)=>s+(a.duration||0),0),trimp:r.reduce((s,a)=>s+(a.trimp||0),0),asc:r.reduce((s,a)=>s+(a.ascent||0),0),pace:r.filter(a=>a.pace).length?r.filter(a=>a.pace).reduce((s,a)=>s+a.pace,0)/r.filter(a=>a.pace).length:null,hr:r.filter(a=>a.avgHR).length?Math.round(r.filter(a=>a.avgHR).reduce((s,a)=>s+a.avgHR,0)/r.filter(a=>a.avgHR).length):null,n:r.length}}
+
+// ═══ BADGES ═══
+const BADGES=[
+  {id:"first",n:"Primera cursa",i:"🏃",d:"1a activitat",ck:()=>acts.length>=1},
+  {id:"km100",n:"100 km",i:"💯",d:"100 km acumulats",ck:()=>acts.reduce((s,a)=>s+(a.distance||0),0)>=100},
+  {id:"km500",n:"500 km",i:"🌟",d:"500 km",ck:()=>acts.reduce((s,a)=>s+(a.distance||0),0)>=500},
+  {id:"km1000",n:"1.000 km",i:"🏅",d:"1.000 km",ck:()=>acts.reduce((s,a)=>s+(a.distance||0),0)>=1000},
+  {id:"r10k",n:"Primer 10K",i:"🔟",d:"Cursa 10+ km",ck:()=>acts.some(a=>(a.distance||0)>=10)},
+  {id:"r21k",n:"Mitja marató",i:"🏆",d:"Cursa 21+ km",ck:()=>acts.some(a=>(a.distance||0)>=21)},
+  {id:"s7",n:"7 dies seguits",i:"7️⃣",d:"Ratxa de 7 dies",ck:()=>calcStreaks().best>=7},
+  {id:"s30",n:"30 dies seguits",i:"🔥",d:"Ratxa de 30 dies",ck:()=>calcStreaks().best>=30},
+  {id:"w5",n:"5 sessions/set",i:"✋",d:"5 en una setmana",ck:()=>{const w={};acts.forEach(a=>{const k=wK(a.date);w[k]=(w[k]||0)+1});return Object.values(w).some(v=>v>=5)}},
+  {id:"elev500",n:"Escalador",i:"⛰️",d:"500m D+ en 1 cursa",ck:()=>acts.some(a=>(a.ascent||0)>=500)},
+  {id:"vet",n:"Veterà",i:"🎯",d:"100+ activitats",ck:()=>acts.length>=100},
+  {id:"h50",n:"50 hores",i:"⏱️",d:"50h d'entrenament",ck:()=>acts.reduce((s,a)=>s+(a.duration||0),0)>=180000},
+];
+
+// ═══ PLAN ═══
+function genPlan(){
+  const tips=[],plan=[];
+  const r28=acts.filter(a=>dS(a.date)<=28),r56=acts.filter(a=>dS(a.date)<=56);
+  if(acts.length<3)return{tips:[{t:"info",i:"📥",x:"Importa almenys 3 activitats."}],plan:[{d:"Dm",t:"easy",n:"Fàcil",x:"30-40min Z2",km:6},{d:"Dj",t:"easy",n:"Fàcil+strides",x:"35min Z2",km:7},{d:"Dv",t:"tempo",n:"Fartlek",x:"4×2min Z3",km:7},{d:"Dg",t:"long",n:"Llarga",x:"60min Z1-Z2",km:12}],wk:32,sum:"Pla genèric"};
+  const wV={};r56.forEach(a=>{const w=wK(a.date);wV[w]=(wV[w]||0)+(a.distance||0)});
+  const vols=Object.values(wV),avgV=vols.length?vols.reduce((s,v)=>s+v,0)/vols.length:0;
+  const wHR=r28.filter(a=>a.hrZone!==null),zC=[0,0,0,0,0];wHR.forEach(a=>zC[a.hrZone]++);
+  const tHR=wHR.length||1,eP=((zC[0]+zC[1])/tHR)*100;
+  if(avgV>20)tips.push({t:"success",i:"✅",x:"Volum estable ~"+avgV.toFixed(0)+" km/set."});
+  if(eP<75&&wHR.length>=5)tips.push({t:"warning",i:"💓",x:eP.toFixed(0)+"% fàcil. Busca 80/20."});
+  else if(eP>=75&&wHR.length>=5)tips.push({t:"success",i:"💚",x:"Bona polarització: "+eP.toFixed(0)+"% Z1-Z2."});
+  tips.push({t:"tip",i:"💡",x:"Consistència > intensitat."});
+  const tKm=Math.min(avgV*1.05,settings.weeklyTarget*1.1),lK=Math.round(tKm*.3),eK=Math.round((tKm-lK)/3);
+  plan.push({d:"Dl",t:"rest",n:"Descans",x:"Descans o cross-training",km:0});
+  plan.push({d:"Dm",t:"easy",n:"Fàcil",x:"Z2 estable",km:eK});
+  plan.push({d:"Dc",t:"quality",n:"Fartlek",x:"5×(2min Z3 / 2min Z1)",km:Math.round(tKm*.17)});
+  plan.push({d:"Dv",t:"easy",n:"Fàcil+strides",x:"Z2 + 4×100m",km:eK});
+  plan.push({d:"Dg",t:"long",n:"Tirada llarga",x:"Z1-Z2 constant",km:lK});
+  return{tips:tips,plan:plan,wk:plan.reduce((s,p)=>s+p.km,0),sum:plan.reduce((s,p)=>s+p.km,0)+" km · "+plan.filter(p=>p.km>0).length+" sessions"};
+}
+
+// ═══ CHART HELPERS ═══
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+function makeChart(canvasId,config){destroyChart(canvasId);const ctx=document.getElementById(canvasId);if(!ctx)return;charts[canvasId]=new Chart(ctx,config)}
+
+// ═══ RENDER ═══
+function render(){
+  // Status chip
+  const ff=calcFF();const st=getStatus(ff);
+  const sb=document.getElementById("statusBadge");
+  sb.textContent=st.s;
+  sb.style.background=st.c+"22";sb.style.color=st.c;
+  // Week progress
+  const tw=wK(dateStr(new Date()));const wkKm=acts.filter(a=>wK(a.date)===tw).reduce((s,a)=>s+(a.distance||0),0);const wkPct=Math.min(100,wkKm/settings.weeklyTarget*100);
+  document.getElementById("weekMini").innerHTML="<b>"+Math.round(wkKm*10)/10+"</b>/"+settings.weeklyTarget+"km";
+  document.getElementById("weekBar").style.width=wkPct+"%";
+  // Bottom nav — single scrollable bar with all destinations
+  const nb=document.getElementById("navbar");
+  nb.innerHTML=TABS.map(t=>{
+    const active=curTab===t.id;
+    return "<button class='nav-item"+(active?" active":"")+"' onclick='navTap(\""+t.id+"\")'><span class='pill'>"+svg(t.ic,24)+"</span><span class='nav-label'>"+t.l+"</span></button>";
+  }).join("");
+  // Scroll active item into view (centered)
+  setTimeout(()=>{const a=nb.querySelector(".nav-item.active");if(a&&a.scrollIntoView)a.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"})},30);
+  // FAB visibility + icon per context
+  const fab=document.getElementById("fab");
+  if(selectedAct){fab.style.display="none"}
+  else if(curTab==="imp"||curTab==="cfg"||curTab==="ai"){fab.style.display="none"}
+  else{fab.style.display="flex";fab.innerHTML=svg(settings.stravaToken?"sync":"add",26)}
+  // Content
+  Object.keys(charts).forEach(k=>destroyChart(k));
+  const m=document.getElementById("main");
+  if(selectedAct)return renderDetail(m,selectedAct,ff);
+  if(curTab==="feed")renderFeed(m,wkKm,wkPct);
+  else if(curTab==="prog")renderProg(m);
+  else if(curTab==="fit")renderFit(m,ff,st);
+  else if(curTab==="rec")renderRec(m);
+  else if(curTab==="plan")renderPlan(m);
+  else if(curTab==="cal")renderCal(m);
+  else if(curTab==="ai")renderAI(m);
+  else if(curTab==="imp")renderImp(m);
+  else if(curTab==="cfg")renderCfg(m);
+}
+
+function navTap(id){switchTab(id)}
+function fabAction(){
+  if(curTab==="imp"||curTab==="cfg"||curTab==="ai")return;
+  if(settings.stravaToken){curTab="imp";render();setTimeout(()=>{if(typeof stravaFetchActivities==="function")stravaFetchActivities()},200)}
+  else{switchTab("imp")}
+}
+
+function switchTab(id){curTab=id;selectedAct=null;detailStreams=null;render();window.scrollTo(0,0)}
+function openAct(id){selectedAct=acts.find(a=>a.id===id)||null;detailStreams=null;render();window.scrollTo(0,0)}
+function closeAct(){selectedAct=null;detailStreams=null;render()}
+
+function renderDetail(m,a,ff){
+  // Find context: nearby activities for comparison
+  const idx=acts.indexOf(a);
+  const prev=idx>0?acts[idx-1]:null;
+  const next=idx<acts.length-1?acts[idx+1]:null;
+  const sameWeek=acts.filter(x=>wK(x.date)===wK(a.date)&&x.id!==a.id);
+  const last10=acts.filter(x=>x.distance&&x.distance>=((a.distance||5)*0.7)&&x.distance<=((a.distance||5)*1.3)&&x.id!==a.id).slice(-10);
+
+  // Zone names and colors
+  const zNames=["Z1 Recuperació","Z2 Aeròbic","Z3 Tempo","Z4 Llindar","Z5 VO₂max"];
+  const zCols=["#7BC8F6","#4CAF50","#FFD600","#FF9800","#F44336"];
+  const zShort=["Z1","Z2","Z3","Z4","Z5"];
+
+  // GAP calculation
+  const gap=(a.pace&&a.distance&&a.ascent)?(function(){const grad=(a.ascent/(a.distance*1000))*100;const f=1+0.033*grad;return f>0?Math.round(a.pace/f):a.pace})():null;
+
+  // Efficiency: pace vs HR ratio (lower = more efficient)
+  const efficiency=(a.pace&&a.avgHR)?Math.round(a.pace/a.avgHR*100)/100:null;
+
+  // Intensity factor: HR as % of max
+  const intensityPct=a.avgHR?Math.round(a.avgHR/settings.hrMax*100):null;
+
+  // Calories estimate (if not available)
+  const calories=a.calories||(a.duration&&settings.weight?Math.round(a.duration/60*settings.weight*0.175):null);
+
+  // Pace per km estimate (splits simulation from avg pace)
+  const numKm=a.distance?Math.floor(a.distance):0;
+
+  // Find this day in F&F
+  const ffDay=ff.find(f=>f.date===a.date);
+
+  // Comparison with similar distance activities
+  const avgPaceSimilar=last10.length>0?last10.reduce((s,x)=>s+(x.pace||0),0)/last10.filter(x=>x.pace).length:null;
+  const avgHRSimilar=last10.length>0?last10.filter(x=>x.avgHR).reduce((s,x)=>s+x.avgHR,0)/(last10.filter(x=>x.avgHR).length||1):null;
+
+  let h="<div class='tab-content'>";
+  // Back button
+  h+="<button onclick='closeAct()' style='background:none;border:none;color:var(--or);font-size:14px;font-weight:700;cursor:pointer;padding:8px 0;font-family:inherit;display:flex;align-items:center;gap:4px'>← Tornar</button>";
+
+  // Header
+  h+="<div class='banner' style='margin-bottom:16px'>";
+  h+="<div style='font-size:22px;font-weight:900;margin-bottom:4px'>"+a.title+"</div>";
+  h+="<div style='font-size:13px;opacity:.85'>"+rD(a.date)+" · "+(a.source==="strava"?"Strava":a.source==="csv"?"Garmin CSV":"Manual")+"</div>";
+  if(a.hrZone!==null)h+="<div style='margin-top:8px'><span class='badge' style='color:#fff;background:"+zCols[a.hrZone]+"90;font-size:12px'>"+zNames[a.hrZone]+"</span></div>";
+  h+="</div>";
+
+  // Main stats grid
+  h+="<div class='grid3' style='margin-bottom:12px'>";
+  h+=statHTML("Distància",(a.distance||"--"),"km","var(--or)");
+  h+=statHTML("Temps",fD(a.duration),"","var(--bu)");
+  h+=statHTML("Ritme",fP(a.pace),"/km","var(--tx)");
+  h+="</div>";
+  h+="<div class='grid3' style='margin-bottom:16px'>";
+  h+=statHTML("FC mitj",a.avgHR||"--","bpm","var(--dn)");
+  h+=statHTML("FC màx",a.maxHR||"--","bpm","#C62828");
+  h+=statHTML("TRIMP",a.trimp||"--","","#9C64EA");
+  h+="</div>";
+
+  // Secondary stats
+  h+="<div class='card'><h3>Detalls</h3>";
+  h+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bd);border-radius:8px;overflow:hidden'>";
+  const details=[
+    {l:"Desnivell +",v:a.ascent?a.ascent+" m":"--"},
+    {l:"Cadència",v:a.cadence?a.cadence+" ppm":"--"},
+    {l:"VO₂max ⓘ",h:"vo2",v:a.vo2||"--"},
+    {l:"Calories",v:calories?calories+" kcal":"--"},
+    {l:"GAP ⓘ",h:"gap",v:gap?fP(gap)+" /km":"--"},
+    {l:"Intensitat ⓘ",h:"intensity",v:intensityPct?intensityPct+"% FC màx":"--"},
+    {l:"Eficiència ⓘ",h:"efficiency",v:efficiency?efficiency+" s/bpm":"--"},
+    {l:"Zona FC",v:a.hrZone!==null?zShort[a.hrZone]:"--"},
+  ];
+  details.forEach(d=>{
+    const clk=d.h?"onclick='showHelp(\""+d.h+"\")' style='cursor:pointer;background:var(--cd);padding:12px 14px'":"style='background:var(--cd);padding:12px 14px'";
+    h+="<div "+clk+"><div style='font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.06em"+(d.h?";border-bottom:1px dashed var(--tm);display:inline":"")+"'>"+d.l+"</div><div style='font-size:16px;font-weight:700;margin-top:2px'>"+d.v+"</div></div>";
+  });
+  h+="</div></div>";
+
+  // Performance assessment
+  h+="<div class='card'><h3>Avaluació del rendiment</h3>";
+  // Intensity assessment
+  if(a.avgHR){
+    const intPct=a.avgHR/settings.hrMax*100;
+    let intLabel,intColor,intDesc;
+    if(intPct<65){intLabel="Molt fàcil";intColor="var(--bu)";intDesc="Sessió de recuperació. Ideal per descansar entre sessions dures."}
+    else if(intPct<75){intLabel="Fàcil / Z2";intColor="#4CAF50";intDesc="Zona aeròbica base. Construeix resistència sense fatiga excessiva."}
+    else if(intPct<82){intLabel="Moderat / Tempo";intColor="#FFD600";intDesc="Zona tempo. Millora el llindar aeròbic."}
+    else if(intPct<90){intLabel="Dur / Llindar";intColor="#FF9800";intDesc="Prop del llindar anaeròbic. Sessions limitades a 1-2/setmana."}
+    else{intLabel="Molt dur / VO₂max";intColor="#F44336";intDesc="Intensitat màxima. Grans guanys però cal recuperació."}
+    h+="<div style='margin-bottom:12px'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px'><span style='font-weight:700;font-size:13px' >Intensitat</span><span class='badge' style='color:"+intColor+";background:"+intColor+"20'>"+intLabel+"</span></div>";
+    h+="<div style='height:8px;background:var(--bg);border-radius:4px;overflow:hidden'><div style='width:"+intPct+"%;height:100%;background:"+intColor+";border-radius:4px'></div></div>";
+    h+="<div style='font-size:12px;color:var(--ts);margin-top:6px'>"+intDesc+"</div></div>";
+  }
+
+  // Training load assessment
+  if(a.trimp){
+    let loadLabel,loadColor,loadDesc;
+    if(a.trimp<50){loadLabel="Lleugera";loadColor="#4CAF50";loadDesc="Càrrega baixa. Bona per dies de recuperació."}
+    else if(a.trimp<100){loadLabel="Moderada";loadColor="#FFD600";loadDesc="Càrrega adequada per sessions regulars d'entrenament."}
+    else if(a.trimp<150){loadLabel="Alta";loadColor="#FF9800";loadDesc="Sessió exigent. Assegura't de descansar bé les pròximes 24-48h."}
+    else{loadLabel="Molt alta";loadColor="#F44336";loadDesc="Sessió extrema. Necessitaràs 48-72h de recuperació."}
+    h+="<div style='margin-bottom:12px'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px'><span style='font-weight:700;font-size:13px' >Càrrega (TRIMP)</span><span class='badge' style='color:"+loadColor+";background:"+loadColor+"20'>"+loadLabel+"</span></div>";
+    h+="<div style='font-size:12px;color:var(--ts)'>"+loadDesc+"</div></div>";
+  }
+
+  // VO2max context
+  if(a.vo2){
+    let vo2Label;
+    if(a.vo2>=55)vo2Label="Excel·lent";else if(a.vo2>=50)vo2Label="Molt bo";else if(a.vo2>=45)vo2Label="Bo";else if(a.vo2>=40)vo2Label="Acceptable";else vo2Label="A millorar";
+    h+="<div style='margin-bottom:12px'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px'><span style='font-weight:700;font-size:13px' >VO₂max estimat</span><span class='badge' style='color:var(--bu);background:var(--bu)20'>"+a.vo2+" — "+vo2Label+"</span></div>";
+    h+="<div style='font-size:12px;color:var(--ts)'>Basat en relació ritme/FC. Un VO₂max en pujada indica millora aeròbica.</div></div>";
+  }
+
+  // Efficiency context
+  if(efficiency){
+    const avgEffSimilar=last10.filter(x=>x.pace&&x.avgHR).length>0?Math.round(last10.filter(x=>x.pace&&x.avgHR).reduce((s,x)=>s+x.pace/x.avgHR,0)/last10.filter(x=>x.pace&&x.avgHR).length*100)/100:null;
+    h+="<div><div style='font-weight:700;font-size:13px;margin-bottom:4px' >Eficiència cardíaca</div>";
+    h+="<div style='font-size:12px;color:var(--ts)'>"+efficiency+" s/bpm"+(avgEffSimilar?" (mitjana sessions similars: "+avgEffSimilar+" s/bpm). "+(efficiency<avgEffSimilar?"⬇ Millor que la mitjana — bona eficiència!":"⬆ Per sobre — possible fatiga o terreny dur."):"")+"</div></div>";
+  }
+  h+="</div>";
+
+  // F&F context for this day
+  if(ffDay){
+    h+="<div class='card'><h3>"+ht("ff","Estat de forma el dia")+"</h3>";
+    h+="<div class='grid3'>";
+    h+=statHTML("Fitness",ffDay.ctl,"CTL","var(--bu)");
+    h+=statHTML("Fatiga",ffDay.atl,"ATL","var(--dn)");
+    h+=statHTML("Forma",ffDay.tsb,"TSB",ffDay.tsb>0?"var(--ok)":"var(--wn)");
+    h+="</div>";
+    if(ffDay.tsb>10)h+="<div style='font-size:12px;color:var(--ok);margin-top:8px'>🟢 Estaves fresc per aquest entrenament.</div>";
+    else if(ffDay.tsb<-15)h+="<div style='font-size:12px;color:var(--dn);margin-top:8px'>🔴 Hi havia fatiga acumulada. Pot haver afectat el rendiment.</div>";
+    else h+="<div style='font-size:12px;color:var(--ts);margin-top:8px'>🔵 Equilibri normal entre fitness i fatiga.</div>";
+    h+="</div>";
+  }
+
+  // Comparison with similar activities
+  if(last10.length>=2){
+    h+="<div class='card'><h3>Comparació amb sessions similars (~"+Math.round(a.distance||0)+" km)</h3>";
+    h+="<div style='overflow-x:auto'><canvas id='chDetailComp' style='max-height:200px'></canvas></div></div>";
+  }
+
+  // Week context
+  if(sameWeek.length>0){
+    const weekTotalKm=(sameWeek.reduce((s,x)=>s+(x.distance||0),0)+(a.distance||0));
+    const weekTrimp=(sameWeek.reduce((s,x)=>s+(x.trimp||0),0)+(a.trimp||0));
+    h+="<div class='card'><h3>Context setmanal</h3>";
+    h+="<div style='font-size:13px;color:var(--ts);line-height:1.7'>Aquesta setmana: <b>"+Math.round(weekTotalKm*10)/10+" km</b> en <b>"+(sameWeek.length+1)+" sessions</b> · TRIMP total: <b>"+weekTrimp+"</b></div>";
+    h+="</div>";
+  }
+
+  // ═══ ADVANCED STREAM ANALYSIS (F1, F2, F3) ═══
+  if(a.source==="strava"){
+    h+="<div id='advAnalysis' class='card' style='border-left:4px solid var(--pu)'><h3 style='margin-bottom:12px'>🔬 Anàlisi avançada</h3>";
+    if(!detailStreams){
+      h+="<div style='font-size:13px;color:var(--ts);margin-bottom:12px'>Descarrega les dades segon a segon (streams) de Strava per veure deriva cardíaca, GAP de trail i corba de millors esforços.</div>";
+      h+="<button id='loadAnalysisBtn' class='btn' onclick='loadDetailAnalysis(\""+a.id+"\")'>📈 Carregar anàlisi avançada</button>";
+    }else{
+      // F1: Cardiac drift
+      const drift=calcCardiacDrift(detailStreams);
+      if(drift){
+        let driftColor=drift.decoupling<5?"var(--ok)":drift.decoupling<10?"var(--wn)":"var(--dn)";
+        let driftMsg=drift.decoupling<5?"Excel·lent — FC molt estable, bona resistència aeròbica":drift.decoupling<10?"Acceptable — lleugera deriva, normal en tirades llargues":"Alta deriva — possible fatiga, deshidratació o calor";
+        h+="<div style='margin-bottom:16px'>";
+        h+="<div class='help-tag' onclick='showHelp(\"drift\")' style='font-weight:700;font-size:14px;margin-bottom:8px'>Deriva cardíaca</div>";
+        h+="<div style='display:flex;gap:12px;margin-bottom:6px'>";
+        h+="<div style='flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px'><div style='font-size:11px;color:var(--tm)'>1a meitat</div><div style='font-size:16px;font-weight:700;color:var(--dn)'>"+drift.hr1+" bpm</div></div>";
+        h+="<div style='flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px'><div style='font-size:11px;color:var(--tm)'>2a meitat</div><div style='font-size:16px;font-weight:700;color:var(--dn)'>"+drift.hr2+" bpm</div></div>";
+        h+="<div style='flex:1;text-align:center;padding:10px;background:"+driftColor+"15;border-radius:8px'><div style='font-size:11px;color:var(--tm)'>Decoupling</div><div style='font-size:16px;font-weight:700;color:"+driftColor+"'>"+drift.decoupling+"%</div></div>";
+        h+="</div><div style='font-size:12px;color:var(--ts)'>"+driftMsg+"</div></div>";
+      }
+      // F2: Segmented GAP
+      const sgap=calcSegmentedGAP(detailStreams);
+      if(sgap){
+        h+="<div style='margin-bottom:16px'>";
+        h+="<div class='help-tag' onclick='showHelp(\"gap\")' style='font-weight:700;font-size:14px;margin-bottom:8px'>GAP segmentat (Minetti)</div>";
+        h+="<div style='display:flex;gap:12px'>";
+        h+="<div style='flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px'><div style='font-size:11px;color:var(--tm)'>Ritme real</div><div style='font-size:16px;font-weight:700'>"+fP(sgap.realPace)+"</div></div>";
+        h+="<div style='flex:1;text-align:center;padding:10px;background:rgba(252,76,2,.08);border-radius:8px'><div style='font-size:11px;color:var(--tm)'>GAP (pla equiv.)</div><div style='font-size:16px;font-weight:700;color:var(--or)'>"+fP(sgap.gapPace)+"</div></div>";
+        h+="</div>";
+        h+="<div style='font-size:12px;color:var(--ts);margin-top:6px'>"+(sgap.diff>5?"El terreny et va alentir ~"+sgap.diff+"s/km. En pla equivaldria a "+fP(sgap.gapPace)+"/km.":"Terreny majoritàriament pla, GAP similar al ritme real.")+"</div></div>";
+      }
+      // F3: Mean Maximal Pace
+      const mmp=calcMMP(detailStreams);
+      if(mmp){
+        h+="<div><div class='help-tag' onclick='showHelp(\"mmp\")' style='font-weight:700;font-size:14px;margin-bottom:8px'>Corba de millors esforços</div>";
+        h+="<div class='chart-box' style='height:180px'><canvas id='chMMP'></canvas></div></div>";
+      }
+      if(!drift&&!sgap&&!mmp)h+="<div style='font-size:13px;color:var(--ts)'>No s'han pogut calcular mètriques avançades (falten dades de FC/GPS en aquesta activitat).</div>";
+    }
+    h+="</div>";
+  }
+
+  // Navigation
+  if(prev)h+="<button onclick='openAct(\""+prev.id+"\")' style='background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:10px 16px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--ts)'>← "+rD(prev.date)+"</button>";
+  else h+="<div></div>";
+  if(next)h+="<button onclick='openAct(\""+next.id+"\")' style='background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:10px 16px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--ts)'>"+rD(next.date)+" →</button>";
+  h+="</div>";
+
+  h+="</div>";
+  m.innerHTML=h;
+
+  // Render comparison chart
+  if(last10.length>=2){
+    setTimeout(()=>{
+      const compActs=[...last10.slice(-8),a].sort((x,y)=>x.date.localeCompare(y.date));
+      const labels=compActs.map(x=>rD(x.date));
+      const datasets=[{label:"Ritme (min/km)",data:compActs.map(x=>x.pace?Math.round(x.pace/60*100)/100:null),borderColor:"#D11E6B",backgroundColor:compActs.map(x=>x.id===a.id?"#D11E6B":"rgba(209,30,107,0.3)"),pointBackgroundColor:compActs.map(x=>x.id===a.id?"#D11E6B":"rgba(209,30,107,0.5)"),pointRadius:compActs.map(x=>x.id===a.id?6:3),tension:.3,yAxisID:"y"}];
+      if(compActs.some(x=>x.avgHR)){
+        datasets.push({label:"FC (bpm)",data:compActs.map(x=>x.avgHR||null),borderColor:"#E5383B",backgroundColor:compActs.map(x=>x.id===a.id?"#E5383B":"rgba(229,56,59,0.3)"),pointRadius:compActs.map(x=>x.id===a.id?6:3),tension:.3,yAxisID:"y1"});
+      }
+      makeChart("chDetailComp",{type:"line",data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom",labels:{boxWidth:12,font:{size:10}}}},scales:{y:{reverse:true,position:"left",title:{display:true,text:"min/km",font:{size:10}},ticks:{font:{size:10}}},y1:{position:"right",title:{display:true,text:"bpm",font:{size:10}},ticks:{font:{size:10}},grid:{drawOnChartArea:false}}}}});
+    },50);
+  }
+
+  // F3: MMP chart
+  if(detailStreams){
+    const mmp=calcMMP(detailStreams);
+    if(mmp){
+      setTimeout(()=>{
+        makeChart("chMMP",{type:"line",data:{labels:mmp.map(p=>p.label),datasets:[{label:"Millor ritme (min/km)",data:mmp.map(p=>Math.round(p.pace/60*100)/100),borderColor:"#9C64EA",backgroundColor:"rgba(156,100,234,.1)",fill:true,tension:.3,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{reverse:true,title:{display:true,text:"min/km",font:{size:10}},ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}}});
+      },80);
+    }
+  }
+}
+
+function renderFeed(m,wkKm,wkPct){
+  const sk=calcStreaks();const earned=BADGES.filter(b=>b.ck()).length;
+  let h="<div class='tab-content'>";
+  h+="<div class='banner'><span class='ico bg-icon'>"+ICONS.run+"</span><div style='font-size:12px;font-weight:600;opacity:.85;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px'>Aquesta setmana</div>";
+  h+="<div style='display:flex;align-items:baseline;gap:6px'><span style='font-family:var(--serif);font-size:40px;font-weight:600'>"+Math.round(wkKm*10)/10+"</span><span style='font-size:14px;opacity:.8'>/ "+settings.weeklyTarget+" km</span></div>";
+  h+="<div class='progress-bar' style='background:rgba(255,255,255,.25);margin-top:8px'><div class='progress-fill' style='width:"+wkPct+"%;background:#fff'></div></div>";
+  h+="<div style='display:flex;gap:18px;margin-top:12px;font-size:13px;font-weight:500'><span style='display:flex;align-items:center;gap:4px'>"+svg('fire',18)+""+sk.cur+" dies</span><span style='display:flex;align-items:center;gap:4px'>"+svg('medal',18)+""+sk.best+"</span><span style='display:flex;align-items:center;gap:4px'>"+svg('badge',18)+""+earned+"/"+BADGES.length+"</span></div></div>";
+  h+="<div class='sec-title'>Activitat recent</div><div class='sec-sub'>"+acts.length+" activitats</div>";
+  if(acts.length===0){h+="<div style='text-align:center;padding:48px 20px;color:var(--on-surface-var)'><span class='ico' style='font-size:56px;opacity:.4'>"+ICONS.run+"</span><div style='margin-top:12px;font-size:15px'>Encara no hi ha activitats</div><button class='btn' style='margin-top:16px' onclick='switchTab(\"imp\")'>"+svg('download',18)+" Importar dades</button></div>"}
+  else{acts.slice().reverse().slice(0,25).forEach(a=>{
+    const zn=a.hrZone!==null?["Z1","Z2","Z3","Z4","Z5"][a.hrZone]:"";
+    const zc=a.hrZone!==null?["#7BC8F6","#4CAF50","#C9A800","#FF9800","#F44336"][a.hrZone]:"";
+    const isTrail=(a.ascent||0)>300;
+    h+="<div class='act-card' onclick='openAct(\""+a.id+"\")'><div class='act-head'><div style='display:flex;align-items:center;gap:12px'><div class='act-icon'>"+svg(isTrail?'terrain':'run',22)+"</div><div><div style='font-weight:600;font-size:15px'>"+a.title+"</div><div style='font-size:12px;color:var(--on-surface-var)'>"+rD(a.date)+"</div></div></div><div style='display:flex;gap:6px;align-items:center'>";
+    if(a.vo2)h+="<span class='badge' style='color:var(--on-tertiary-container);background:var(--tertiary-container);cursor:pointer' onclick='event.stopPropagation();showHelp(\x22vo2\x22)'>VO₂ "+a.vo2+"</span>";
+    if(zn)h+="<span class='badge' style='color:#fff;background:"+zc+"'>"+zn+"</span>";
+    h+="<button class='del-btn' onclick='event.stopPropagation();delAct(\""+a.id+"\")'>"+svg('close',20)+"</button></div></div><div class='act-stats'>";
+    h+="<div><div class='al'>Dist</div><div class='av' style='color:var(--primary);font-size:18px'>"+(a.distance||"-")+" <span style='font-size:11px;color:var(--on-surface-var)'>km</span></div></div>";
+    h+="<div><div class='al'>Ritme</div><div class='av'>"+fP(a.pace)+" <span style='font-size:11px;color:var(--on-surface-var)'>/km</span></div></div>";
+    h+="<div><div class='al'>Temps</div><div class='av'>"+fD(a.duration)+"</div></div>";
+    if(a.avgHR)h+="<div><div class='al'>FC</div><div class='av'>"+a.avgHR+" <span style='font-size:11px;color:var(--on-surface-var)'>bpm</span></div></div>";
+    if(a.ascent)h+="<div><div class='al'>D+</div><div class='av'>"+a.ascent+" <span style='font-size:11px;color:var(--on-surface-var)'>m</span></div></div>";
+    if(a.trimp)h+="<div><div class='al help-tag' style='cursor:pointer' onclick='event.stopPropagation();showHelp(\x22trimp\x22)'>TRIMP</div><div class='av'>"+a.trimp+"</div></div>";
+    h+="</div></div>";
+  })}
+  h+="</div>";m.innerHTML=h;
+}
+
+function renderProg(m){
+  const s=getS28(),wk=getWeekly();
+  const goalPct=Math.min(100,Math.round(s.km/(settings.weeklyTarget*4)*100));
+  const circ=2*Math.PI*28;
+  let h="<div class='tab-content'><div class='sec-title'>Progrés</div><div class='sec-sub'>Últimes 4 setmanes</div>";
+  // Hero summary
+  h+="<div class='hero-summary'>";
+  h+="<div class='hero-main'>";
+  h+="<svg class='hero-ring' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='none' stroke='var(--surface-c-high)' stroke-width='7'/><circle cx='32' cy='32' r='28' fill='none' stroke='var(--primary)' stroke-width='7' stroke-linecap='round' stroke-dasharray='"+circ+"' stroke-dashoffset='"+(circ*(1-goalPct/100))+"' transform='rotate(-90 32 32)'/></svg>";
+  h+="<div class='meta'><div class='big'>"+s.km.toFixed(1)+"<span class='u'>km</span></div><div class='lbl'>"+s.n+" sessions · "+goalPct+"% de l'objectiu mensual</div></div>";
+  h+="</div>";
+  h+="<div class='hero-row'>";
+  h+="<div class='cell'><div class='ci'>"+svg('clock',18)+"</div><div class='cv'>"+fDL(s.dur)+"</div><div class='cl'>Temps</div></div>";
+  h+="<div class='cell'><div class='ci'>"+svg('speed',18)+"</div><div class='cv'>"+fP(s.pace)+"</div><div class='cl'>Ritme /km</div></div>";
+  h+="<div class='cell'><div class='ci'>"+svg('heart',18)+"</div><div class='cv'>"+(s.hr||"--")+"</div><div class='cl'>FC bpm</div></div>";
+  h+="<div class='cell'><div class='ci'>"+svg('terrain',18)+"</div><div class='cv'>"+s.asc+"</div><div class='cl'>D+ m</div></div>";
+  h+="</div></div>";
+  if(wk.length>2){
+    h+="<div class='card'><h3>Volum setmanal</h3><div class='chart-box'><canvas id='chVol'></canvas></div></div>";
+    h+="<div class='card'><h3>Ritme mitjà</h3><div class='chart-box'><canvas id='chPace'></canvas></div></div>";
+    if(wk.some(w=>w.avgVO2))h+="<div class='card'><h3>"+ht("vo2","VO₂max estimat")+"</h3><div class='chart-box'><canvas id='chVO2'></canvas></div></div>";
+  }
+  h+="</div>";m.innerHTML=h;
+  if(wk.length>2){
+    setTimeout(()=>{
+      const labels=wk.map(w=>wL(w.week));
+      makeChart("chVol",{type:"bar",data:{labels:labels,datasets:[{label:"km",data:wk.map(w=>w.km),backgroundColor:"#D11E6B",borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},annotation:{}},scales:{y:{beginAtZero:true}}}});
+      const paceData=wk.filter(w=>w.avgP).map(w=>({x:wL(w.week),y:Math.round(w.avgP/60*100)/100}));
+      makeChart("chPace",{type:"line",data:{labels:wk.filter(w=>w.avgP).map(w=>wL(w.week)),datasets:[{label:"min/km",data:wk.filter(w=>w.avgP).map(w=>Math.round(w.avgP/60*100)/100),borderColor:"#D11E6B",backgroundColor:"rgba(209,30,107,.12)",fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{reverse:true}}}});
+      if(wk.some(w=>w.avgVO2))makeChart("chVO2",{type:"line",data:{labels:wk.filter(w=>w.avgVO2).map(w=>wL(w.week)),datasets:[{label:"VO₂max",data:wk.filter(w=>w.avgVO2).map(w=>w.avgVO2),borderColor:"#9C64EA",backgroundColor:"rgba(156,100,234,.1)",fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+    },50);
+  }
+}
+
+function renderFit(m,ff,st){
+  const acwr=calcACWR();
+  let h="<div class='tab-content'><div class='sec-title'>Estat de forma</div><div class='sec-sub'>Fitness & Freshness</div>";
+  // Status card
+  h+="<div class='card' style='display:flex;gap:16px;align-items:center'><div style='font-size:36px'>"+st.i+"</div><div style='flex:1'><div style='font-size:16px;font-weight:800;color:"+st.c+"'>"+st.s+"</div><div style='font-size:13px;color:var(--ts);margin-top:2px'>"+st.d+"</div></div>";
+  if(acwr!==null){h+="<div style='text-align:center'><div style='font-size:10px;color:var(--tm);text-transform:uppercase;cursor:pointer' onclick='showHelp(\x22acwr\x22)'>ACWR ⓘ</div><div style='font-size:22px;font-weight:800;color:"+(acwr>1.5?"var(--dn)":acwr>1.3?"var(--wn)":acwr<.8?"var(--bu)":"var(--ok)")+"'>"  +acwr+"</div><div style='font-size:10px;color:var(--tm)'>"+(acwr>1.5?"⚠ Risc":acwr<.8?"Baixa":"Òptim")+"</div></div>"}
+  h+="</div>";
+  // F6: Monotonia + Strain combined load alert
+  const mono=calcMonotony();
+  if(mono){
+    const mc=mono.monotony<1.5?"var(--ok)":mono.monotony<2?"var(--wn)":"var(--dn)";
+    const ml=mono.monotony<1.5?"Bona variabilitat":mono.monotony<2?"Precaució":"Risc alt";
+    h+="<div class='card'><h3 class='help-tag' onclick='showHelp(\x22monotony\x22)' style='display:inline-block'>Monotonia i Strain</h3>";
+    h+="<div style='display:flex;gap:12px;margin-top:8px'>";
+    h+="<div style='flex:1;text-align:center;padding:12px;background:"+mc+"15;border-radius:8px'><div style='font-size:10px;color:var(--tm);text-transform:uppercase'>Monotonia</div><div style='font-size:22px;font-weight:800;color:"+mc+"'>"+mono.monotony+"</div><div style='font-size:10px;color:var(--tm)'>"+ml+"</div></div>";
+    h+="<div style='flex:1;text-align:center;padding:12px;background:var(--bg);border-radius:8px'><div style='font-size:10px;color:var(--tm);text-transform:uppercase'>Strain</div><div style='font-size:22px;font-weight:800;color:var(--tx)'>"+mono.strain+"</div><div style='font-size:10px;color:var(--tm)'>càrrega×monotonia</div></div>";
+    h+="</div>";
+    // Combined risk assessment
+    let riskMsg,riskColor;
+    if((acwr!==null&&acwr>1.5)||mono.monotony>2){riskMsg="🔴 Risc de lesió elevat: combina càrrega alta amb poca variabilitat. Introdueix dies fàcils i de descans.";riskColor="var(--dn)"}
+    else if((acwr!==null&&acwr>1.3)||mono.monotony>1.7){riskMsg="🟡 Atenció: vigila la progressió de càrrega aquesta setmana.";riskColor="var(--wn)"}
+    else{riskMsg="🟢 Càrrega i variabilitat saludables. Continua així!";riskColor="var(--ok)"}
+    h+="<div style='font-size:12px;color:"+riskColor+";margin-top:10px;padding:10px 12px;background:"+riskColor+"10;border-radius:8px'>"+riskMsg+"</div>";
+    h+="</div>";
+  }
+  if(ff.length>10){
+    h+="<div class='card'><h3>"+ht("ff","Fitness")+" · "+ht("atl","Fatiga")+" · "+ht("tsb","Forma")+"</h3><div class='chart-box' style='height:240px'><canvas id='chFF'></canvas></div>";
+    const last=ff[ff.length-1];
+    h+="<div style='display:flex;gap:16px;font-size:11px;margin-top:8px'><span style='color:var(--bu)'>● Fitness "+(last?last.ctl:"--")+"</span><span style='color:var(--dn)'>● Fatiga "+(last?last.atl:"--")+"</span><span style='color:var(--ok)'>● Forma "+(last?last.tsb:"--")+"</span></div></div>";
+  }
+  h+="</div>";m.innerHTML=h;
+  if(ff.length>10){
+    setTimeout(()=>{
+      const d=ff.slice(-90);
+      makeChart("chFF",{type:"line",data:{labels:d.map(x=>x.label),datasets:[
+        {label:"Fitness (CTL)",data:d.map(x=>x.ctl),borderColor:"#2D71E6",backgroundColor:"rgba(45,113,230,.1)",fill:true,tension:.3,pointRadius:0},
+        {label:"Fatiga (ATL)",data:d.map(x=>x.atl),borderColor:"#E5383B",tension:.3,pointRadius:0},
+        {label:"Forma (TSB)",data:d.map(x=>x.tsb),borderColor:"#00B865",tension:.3,pointRadius:0}
+      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:12,font:{size:10}}}},scales:{x:{ticks:{maxTicksToShow:8,font:{size:9}}}}}});
+    },50);
+  }
+}
+
+function renderRec(m){
+  const prs=calcPRs(),pred=calcPredictions(prs),sk=calcStreaks();
+  let h="<div class='tab-content'><div class='sec-title'>Rècords</div><div class='sec-sub'>Marques, prediccions i badges</div>";
+  // PRs
+  h+="<div class='card'><h3>"+ht("pr","Millors marques")+"</h3>";
+  ["1 km","5 km","10 km","Mitja","Marató"].forEach(n=>{const p=prs[n];h+="<div style='display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)'><span style='font-weight:700'>"+n+"</span>";if(p)h+="<div><span style='font-weight:800;font-size:16px;color:var(--or)'>"+fDH(p.time)+"</span><span style='font-size:11px;color:var(--tm);margin-left:8px'>"+rD(p.date)+"</span></div>";else h+="<span style='color:var(--tm)'>—</span>";h+="</div>"});
+  h+="</div>";
+  // Predictions
+  if(pred){h+="<div class='card'><h3>"+ht("riegel","Predicció (Riegel)")+"</h3>";pred.forEach(p=>{h+="<div style='display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)'><span style='font-weight:600'>"+p.n+"</span><div><span style='font-weight:800;color:var(--bu)'>"+fDH(p.t)+"</span><span style='font-size:11px;color:var(--tm);margin-left:8px'>"+fP(p.t/p.k)+"/km</span></div></div>"});h+="</div>"}
+  // F4: Multi-model predictor with elevation
+  h+="<div class='card' style='border-left:4px solid var(--pu)'><h3 class='help-tag' onclick='showHelp(\x22racepred\x22)' style='display:inline-block'>Predictor de cursa avançat</h3>";
+  h+="<div style='font-size:12px;color:var(--ts);margin:8px 0 12px'>Combina Riegel + VDOT i ajusta pel desnivell (clau en trail).</div>";
+  h+="<div style='display:flex;gap:8px;margin-bottom:12px'>";
+  h+="<div style='flex:1'><label style='font-size:10px;color:var(--tm);text-transform:uppercase'>Distància (km)</label><input id='predKm' type='number' step='0.1' value='"+(settings.predKm||21.1)+"' onchange='updSet(\x22predKm\x22,parseFloat(this.value));renderRecCalc()' style='background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:14px;width:100%;outline:none;font-family:inherit'></div>";
+  h+="<div style='flex:1'><label style='font-size:10px;color:var(--tm);text-transform:uppercase'>Desnivell + (m)</label><input id='predAsc' type='number' value='"+(settings.predAsc||500)+"' onchange='updSet(\x22predAsc\x22,parseInt(this.value));renderRecCalc()' style='background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:14px;width:100%;outline:none;font-family:inherit'></div>";
+  h+="</div><div id='predResult'></div></div>";
+  // Streaks
+  h+="<div class='card'><h3>"+ht("streak","Ratxes")+"</h3><div class='grid2'><div style='text-align:center;padding:16px;background:rgba(252,76,2,.06);border-radius:10px'><div style='font-size:32px;font-weight:900;color:var(--or)'>"+sk.cur+"</div><div style='font-size:12px;color:var(--ts)'>Ratxa actual</div></div><div style='text-align:center;padding:16px;background:rgba(45,113,230,.08);border-radius:10px'><div style='font-size:32px;font-weight:900;color:var(--bu)'>"+sk.best+"</div><div style='font-size:12px;color:var(--ts)'>Rècord</div></div></div></div>";
+  // Badges
+  const earned=BADGES.filter(b=>b.ck()).length;
+  h+="<div class='card'><h3>"+ht("badges","Badges")+" ("+earned+"/"+BADGES.length+")</h3><div class='badge-grid'>";
+  BADGES.forEach(b=>{const e=b.ck();h+="<div class='badge-item "+(e?"earned":"locked")+"'><div style='font-size:24px'>"+b.i+"</div><div style='font-size:12px;font-weight:700;margin-top:4px;color:"+(e?"var(--or)":"var(--tm)")+"'>"+b.n+"</div><div style='font-size:10px;color:var(--tm);margin-top:2px'>"+b.d+"</div></div>"});
+  h+="</div></div></div>";m.innerHTML=h;
+  setTimeout(renderRecCalc,50);
+}
+
+function renderRecCalc(){
+  const el=document.getElementById("predResult");
+  if(!el)return;
+  const prs=calcPRs();
+  const km=settings.predKm||21.1,asc=settings.predAsc||500;
+  const mp=calcMultiPredict(prs,km,asc);
+  if(!mp){el.innerHTML="<div style='font-size:13px;color:var(--tm)'>Necessites almenys una marca registrada per fer prediccions.</div>";return}
+  let h="<div style='background:var(--bg);border-radius:10px;padding:14px'>";
+  h+="<div style='display:flex;justify-content:space-between;padding:6px 0;font-size:13px'><span style='color:var(--ts)'>Riegel</span><b>"+fDH(mp.riegel)+"</b></div>";
+  h+="<div style='display:flex;justify-content:space-between;padding:6px 0;font-size:13px'><span style='color:var(--ts)'>VDOT (Daniels)</span><b>"+fDH(mp.vdot)+"</b></div>";
+  h+="<div style='display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-top:1px solid var(--bd);margin-top:4px'><span style='color:var(--ts)'>Mitjana (pla)</span><b>"+fDH(mp.avg)+"</b></div>";
+  h+="<div style='display:flex;justify-content:space-between;padding:10px 0 0;font-size:15px'><span style='font-weight:700;color:var(--pu)'>Amb desnivell (+"+mp.elevPenalty+"s)</span><b style='color:var(--pu);font-size:18px'>"+fDH(mp.withElev)+"</b></div>";
+  h+="<div style='font-size:11px;color:var(--tm);margin-top:8px'>Ritme estimat: "+fP(mp.withElev/km)+"/km · El desnivell afegeix ~0.6s per cada metre de D+</div>";
+  h+="</div>";
+  el.innerHTML=h;
+}
+
+function renderPlan(m){
+  const p=genPlan();const cols={rest:"var(--tm)",easy:"#4CAF50",quality:"#FF9800",tempo:"#FFD600",long:"var(--bu)"};const icons={rest:"🧘",easy:"🏃",quality:"⚡",tempo:"🔥",long:"🏔️"};
+  let h="<div class='tab-content'><div class='sec-title'>Pla setmanal</div><div class='sec-sub'>"+p.sum+"</div>";
+  h+="<div class='card' style='display:flex;justify-content:space-between;align-items:center'><div><div style='font-weight:700'>Objectiu: salut i forma</div></div><div style='font-size:26px;font-weight:900;color:var(--or)'>"+p.wk+" <span style='font-size:13px;color:var(--tm)'>km</span></div></div>";
+  p.plan.forEach(s=>{h+="<div class='plan-item' style='border-left-color:"+(cols[s.t]||"var(--tm)")+";'><span style='font-size:20px'>"+(icons[s.t]||"")+"</span><div style='flex:1'><div style='font-size:13px;font-weight:700'>"+s.d+" · "+s.n+"</div><div style='font-size:12px;color:var(--ts);margin-top:2px'>"+s.x+"</div>"+(s.km>0?"<div style='font-size:13px;font-weight:800;color:"+(cols[s.t]||"var(--tm)")+";margin-top:4px'>"+s.km+" km</div>":"")+"</div></div>"});
+  h+="<div style='margin-top:20px'><div class='sec-title' style='font-size:16px'>Consells</div>";
+  p.tips.forEach(t=>{const bg={success:"rgba(0,184,101,.08)",warning:"rgba(245,166,35,.08)",info:"rgba(45,113,230,.08)",tip:"rgba(156,100,234,.08)"}[t.t]||"rgba(45,113,230,.08)";const bc={success:"var(--ok)",warning:"var(--wn)",info:"var(--bu)",tip:"#9C64EA"}[t.t]||"var(--bu)";h+="<div class='tip' style='background:"+bg+";border-left:3px solid "+bc+"'><span style='font-size:16px'>"+t.i+"</span><span>"+t.x+"</span></div>"});
+  h+="</div></div>";m.innerHTML=h;
+}
+
+function renderCal(m){
+  const now=new Date(),yr=now.getFullYear(),mo=now.getMonth();
+  const yActs=acts.filter(a=>new Date(a.date).getFullYear()===yr);
+  const mActs=yActs.filter(a=>new Date(a.date).getMonth()===mo);
+  const allKm=acts.reduce((s,a)=>s+(a.distance||0),0);
+  const yKm=yActs.reduce((s,a)=>s+(a.distance||0),0);
+  const mKm=mActs.reduce((s,a)=>s+(a.distance||0),0);
+  let h="<div class='tab-content'><div class='sec-title'>Calendari</div><div class='sec-sub'>Heatmap · Objectiu anual</div>";
+  // Annual goal
+  const yPct=Math.min(100,yKm/settings.yearlyGoal*100);
+  h+="<div class='card'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px'><span style='font-weight:700'>Objectiu "+yr+"</span><div><span style='font-size:20px;font-weight:900;color:var(--or)'>"+Math.round(yKm)+"</span><span style='color:var(--tm);font-size:12px'> / "+settings.yearlyGoal+" km</span></div></div>";
+  h+="<div class='progress-bar'><div class='progress-fill' style='width:"+yPct+"%;background:linear-gradient(90deg,var(--or),var(--wn))'></div></div>";
+  h+="<div style='font-size:11px;color:var(--tm);margin-top:6px'>"+Math.round(yPct)+"% · Falten "+Math.max(0,Math.round(settings.yearlyGoal-yKm))+" km</div></div>";
+  // Heatmap
+  h+="<div class='card'><h3>"+ht("heatmap","Últims 6 mesos")+"</h3><div class='heatmap'>";
+  const dayMap={};acts.forEach(a=>{dayMap[a.date]=(dayMap[a.date]||0)+(a.distance||0)});
+  const start=new Date();start.setDate(start.getDate()-182);
+  for(let wi=0;wi<26;wi++){h+="<div class='heatmap-col'>";for(let di=0;di<7;di++){const d=new Date(start);d.setDate(d.getDate()+wi*7+di);const ds=dateStr(d);const km=dayMap[ds]||0;const op=km===0?.05:km<5?.25:km<10?.5:km<15?.75:1;h+="<div class='heatmap-cell' style='background:var(--or);opacity:"+op+"' title='"+ds+": "+Math.round(km*10)/10+"km'></div>"}h+="</div>"}
+  h+="</div><div style='display:flex;gap:6px;align-items:center;font-size:10px;color:var(--tm);margin-top:4px'><span>Menys</span>";
+  [.05,.25,.5,.75,1].forEach(o=>{h+="<div style='width:12px;height:12px;border-radius:2px;background:var(--or);opacity:"+o+"'></div>"});
+  h+="<span>Més</span></div></div>";
+  // Cumulative stats
+  h+="<div class='card'><h3>Estadístiques acumulades</h3><div class='grid3'>";
+  h+="<div style='text-align:center;padding:12px;background:rgba(252,76,2,.06);border-radius:8px'><div style='font-size:10px;color:var(--ts);text-transform:uppercase'>Mes</div><div style='font-size:18px;font-weight:800;color:var(--or)'>"+Math.round(mKm)+" km</div><div style='font-size:11px;color:var(--tm)'>"+mActs.length+" sessions</div></div>";
+  h+="<div style='text-align:center;padding:12px;background:rgba(45,113,230,.08);border-radius:8px'><div style='font-size:10px;color:var(--ts);text-transform:uppercase'>Any</div><div style='font-size:18px;font-weight:800;color:var(--bu)'>"+Math.round(yKm)+" km</div><div style='font-size:11px;color:var(--tm)'>"+yActs.length+" sessions</div></div>";
+  h+="<div style='text-align:center;padding:12px;background:rgba(156,100,234,.08);border-radius:8px'><div style='font-size:10px;color:var(--ts);text-transform:uppercase'>Total</div><div style='font-size:18px;font-weight:800;color:#9C64EA'>"+Math.round(allKm)+" km</div><div style='font-size:11px;color:var(--tm)'>"+acts.length+" act</div></div>";
+  h+="</div></div></div>";m.innerHTML=h;
+}
+
+// ═══ AI COACH ═══
+let aiMessages=[]; // conversation history
+let aiBusy=false;
+
+function buildTrainingContext(){
+  // User has written consent from Strava to use API data with AI
+  const data=acts;
+  const ff=calcFF();
+  const last=ff.length?ff[ff.length-1]:null;
+  const acwr=calcACWR();
+  const mono=calcMonotony();
+  const s28=getS28();
+  const prs=calcPRs();
+  const sk=calcStreaks();
+  const wk=getWeekly().slice(-8);
+
+  let ctx="PERFIL DEL CORREDOR:\n";
+  ctx+="- Nom: "+settings.name+", "+settings.weight+"kg\n";
+  ctx+="- FC màxima: "+settings.hrMax+", FC repòs: "+settings.hrRest+"\n";
+  ctx+="- Objectiu setmanal: "+settings.weeklyTarget+"km, anual: "+settings.yearlyGoal+"km\n";
+  ctx+="- Corredor popular amb 13 anys d'experiència, objectiu: mantenir forma i salut\n\n";
+
+  ctx+="ESTAT DE FORMA ACTUAL:\n";
+  if(last)ctx+="- Fitness (CTL): "+last.ctl+", Fatiga (ATL): "+last.atl+", Forma (TSB): "+last.tsb+"\n";
+  if(acwr!==null)ctx+="- ACWR (ràtio càrrega aguda/crònica): "+acwr+"\n";
+  if(mono)ctx+="- Monotonia: "+mono.monotony+", Strain: "+mono.strain+"\n\n";
+
+  ctx+="ÚLTIMES 4 SETMANES:\n";
+  ctx+="- "+s28.km.toFixed(1)+"km en "+s28.n+" sessions\n";
+  ctx+="- Ritme mitjà: "+fP(s28.pace)+"/km, FC mitjana: "+(s28.hr||"n/d")+"bpm\n";
+  ctx+="- Desnivell acumulat: "+s28.asc+"m\n\n";
+
+  ctx+="VOLUM SETMANAL (últimes 8 setmanes, km):\n";
+  ctx+=wk.map(w=>wL(w.week)+": "+w.km+"km/"+w.n+"ses"+(w.avgHR?"/"+w.avgHR+"bpm":"")).join("\n")+"\n\n";
+
+  ctx+="MILLORS MARQUES:\n";
+  ["5 km","10 km","Mitja","Marató"].forEach(n=>{if(prs[n])ctx+="- "+n+": "+fDH(prs[n].time)+"\n"});
+  ctx+="\nRatxa actual: "+sk.cur+" dies, rècord: "+sk.best+" dies\n";
+  ctx+="\nTotal activitats analitzades: "+data.length+" (totes les fonts, incloent Strava)\n";
+  return ctx;
+}
+
+async function callAI(userPrompt){
+  if(!settings.aiKey){alert("Configura la teva clau d'API a Perfil → AI Coach primer.");return}
+  if(aiBusy)return;
+  aiBusy=true;
+  aiMessages.push({role:"user",content:userPrompt});
+  renderAIChat();
+  const sysPrompt="Ets un entrenador professional especialitzat en running i trail running amb dècades d'experiència. Analitzes dades d'entrenament i dones consells pràctics, concisos i basats en evidència. Respons SEMPRE en català. Sigues directe i útil. Prioritzes la salut i la prevenció de lesions. Quan detectis riscos (ACWR alt, monotonia alta, deriva cardíaca), avisa'n. Format: usa frases clares, evita tecnicismes innecessaris, dona accions concretes.";
+  const context=buildTrainingContext();
+  try{
+    let respText="";
+    if(settings.aiProvider==="anthropic"){
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":settings.aiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:settings.aiModel,max_tokens:1024,system:sysPrompt+"\n\nDADES DEL CORREDOR:\n"+context,messages:aiMessages})
+      });
+      if(!resp.ok){const e=await resp.text();throw new Error("HTTP "+resp.status+": "+e.slice(0,150))}
+      const data=await resp.json();
+      respText=data.content.filter(c=>c.type==="text").map(c=>c.text).join("\n");
+    }else{
+      // OpenAI
+      const msgs=[{role:"system",content:sysPrompt+"\n\nDADES:\n"+context},...aiMessages];
+      const resp=await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+settings.aiKey},
+        body:JSON.stringify({model:settings.aiModel,max_tokens:1024,messages:msgs})
+      });
+      if(!resp.ok){const e=await resp.text();throw new Error("HTTP "+resp.status+": "+e.slice(0,150))}
+      const data=await resp.json();
+      respText=data.choices[0].message.content;
+    }
+    aiMessages.push({role:"assistant",content:respText});
+  }catch(err){
+    aiMessages.push({role:"assistant",content:"⚠️ Error: "+err.message+"\n\nComprova la clau d'API i el model a Perfil."});
+  }
+  aiBusy=false;
+  renderAIChat();
+}
+
+function aiPreset(type){
+  const prompts={
+    weekly:"Analitza la meva última setmana d'entrenament i digues-me com ha anat: punts forts, punts a millorar i una recomanació concreta.",
+    risk:"Avalua el meu risc de lesió actual basant-te en l'ACWR, la monotonia i la càrrega recent. Necessito reduir, mantenir o puc augmentar?",
+    plan:"Proposa'm un pla d'entrenament per a la setmana vinent basat en el meu estat de forma actual, orientat a mantenir forma i salut.",
+    race:"Tinc una cursa aviat. Dona'm consells d'estratègia i de com afinar (tapering) les properes setmanes basant-te en les meves dades."
+  };
+  if(prompts[type])callAI(prompts[type]);
+}
+
+function aiSend(){
+  const inp=document.getElementById("aiInput");
+  if(!inp||!inp.value.trim())return;
+  const v=inp.value.trim();
+  inp.value="";
+  callAI(v);
+}
+
+function aiClear(){aiMessages=[];renderAIChat()}
+
+function renderAIChat(){
+  const el=document.getElementById("aiChat");
+  if(!el)return;
+  if(aiMessages.length===0){
+    el.innerHTML="<div style='text-align:center;color:var(--tm);padding:30px 10px;font-size:13px'>Fes una pregunta o tria un anàlisi ràpid a dalt.</div>";
+    return;
+  }
+  let h="";
+  aiMessages.forEach(m=>{
+    if(m.role==="user")h+="<div style='text-align:right;margin-bottom:10px'><span style='display:inline-block;background:var(--or);color:#fff;padding:10px 14px;border-radius:14px 14px 4px 14px;font-size:13px;max-width:85%;text-align:left'>"+m.content.replace(/</g,"&lt;")+"</span></div>";
+    else h+="<div style='margin-bottom:10px'><span style='display:inline-block;background:var(--bg);padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:13px;max-width:90%;line-height:1.6;white-space:pre-wrap'>"+m.content.replace(/</g,"&lt;").replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")+"</span></div>";
+  });
+  if(aiBusy)h+="<div style='color:var(--tm);font-size:13px;padding:8px'>⏳ L'entrenador està pensant...</div>";
+  el.innerHTML=h;
+  el.scrollTop=el.scrollHeight;
+}
+
+function renderAI(m){
+  let h="<div class='tab-content'><div class='sec-title'>AI Coach</div><div class='sec-sub'>Entrenador personal amb IA</div>";
+  if(!settings.aiKey){
+    h+="<div class='card' style='border-left:4px solid var(--pu)'><div style='font-weight:700;margin-bottom:8px'>Configura l'IA</div>";
+    h+="<div style='font-size:13px;color:var(--ts);line-height:1.7;margin-bottom:12px'>Per usar l'AI Coach, afegeix la teva clau d'API (Anthropic o OpenAI) a <b>Perfil → AI Coach</b>. La clau es guarda només al teu dispositiu.</div>";
+    h+="<button class='btn' onclick='switchTab(\x22cfg\x22)'>Anar a Perfil</button></div>";
+    // Legal note
+    h+="<div class='card' style='background:rgba(0,184,101,.08)'><div style='font-size:12px;color:var(--ts);line-height:1.6'>✅ <b>Consentiment Strava:</b> amb el permís per escrit de Strava, l'AI Coach analitza <b>totes</b> les teves activitats, incloent les sincronitzades via l'API de Strava.</div></div>";
+    h+="</div>";m.innerHTML=h;return;
+  }
+  // Preset buttons
+  h+="<div class='card'><div style='font-size:12px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px'>Anàlisi ràpid</div>";
+  h+="<div style='display:flex;flex-wrap:wrap;gap:8px'>";
+  h+="<button onclick='aiPreset(\x22weekly\x22)' style='background:var(--bg);border:1px solid var(--bd);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit'>📊 Analitza la setmana</button>";
+  h+="<button onclick='aiPreset(\x22risk\x22)' style='background:var(--bg);border:1px solid var(--bd);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit'>⚠️ Risc de lesió</button>";
+  h+="<button onclick='aiPreset(\x22plan\x22)' style='background:var(--bg);border:1px solid var(--bd);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit'>🎯 Pla setmanal</button>";
+  h+="<button onclick='aiPreset(\x22race\x22)' style='background:var(--bg);border:1px solid var(--bd);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit'>🏁 Estratègia cursa</button>";
+  h+="</div></div>";
+  // Chat area
+  h+="<div class='card' style='padding:0;overflow:hidden'>";
+  h+="<div id='aiChat' style='height:320px;overflow-y:auto;padding:16px'></div>";
+  h+="<div style='border-top:1px solid var(--bd);padding:10px;display:flex;gap:8px'>";
+  h+="<input id='aiInput' placeholder='Pregunta al teu entrenador...' style='flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:20px;padding:10px 14px;font-size:14px;outline:none;font-family:inherit' onkeydown='if(event.key===\x22Enter\x22)aiSend()'>";
+  h+="<button onclick='aiSend()' style='background:var(--or);border:none;border-radius:50%;width:40px;height:40px;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0'>↑</button>";
+  h+="</div></div>";
+  h+="<div style='text-align:center'><button onclick='aiClear()' style='background:none;border:none;color:var(--tm);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline'>Esborrar conversa</button></div>";
+  h+="</div>";m.innerHTML=h;
+  setTimeout(renderAIChat,30);
+}
+
+function renderImp(m){
+  const connected=!!settings.stravaToken;
+  let h="<div class='tab-content'><div class='sec-title'>Importar dades</div>";
+  // Strava sync
+  h+="<div class='card' style='border-left:4px solid #FC4C02'>";
+  h+="<div style='display:flex;align-items:center;gap:12px;margin-bottom:14px'>";
+  h+="<svg width='36' height='36' viewBox='0 0 36 36'><rect fill='#FC4C02' width='36' height='36' rx='8'/><path d='M18 8l-5 12h3.5l-1.5 8 8-11h-4l3-9z' fill='#fff'/></svg>";
+  h+="<div><div style='font-weight:700;font-size:15px'>Strava Sync</div><div style='font-size:12px;color:var(--tm)'>"+(connected?"✅ Connectat":"No connectat")+"</div></div></div>";
+  if(!settings.stravaSecret){
+    h+="<div style='font-size:12px;color:var(--wn);padding:10px 12px;background:rgba(245,166,35,.08);border-radius:8px;margin-bottom:12px'>⚠ Configura el <b>Client Secret</b> de Strava a la pestanya <b>Perfil</b> primer.</div>";
+  }else if(connected){
+    h+="<button class='btn' onclick='stravaFetchActivities()' style='margin-right:8px'>🔄 Sincronitzar ara</button>";
+    h+="<button onclick='stravaDisconnect()' style='background:rgba(229,56,59,.08);border:1px solid rgba(229,56,59,.2);border-radius:8px;padding:8px 16px;color:var(--dn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>Desconnectar</button>";
+  }else{
+    h+="<button class='btn' onclick='stravaConnect()'>🔗 Connectar amb Strava</button>";
+  }
+  h+="<div id='stravaMsg' style='margin-top:10px'></div></div>";
+  // CSV
+  h+="<div class='card'><div style='font-weight:700;font-size:15px;margin-bottom:12px'>📁 CSV de Garmin / Strava</div>";
+  h+="<div style='font-size:12px;color:var(--ts);line-height:1.7;margin-bottom:14px;padding:10px 12px;background:var(--bg);border-radius:8px'><b>Garmin:</b> connect.garmin.com → Activitats → ⬇ CSV<br><b>Strava:</b> Configuració → Descarregar dades</div>";
+  h+="<label class='btn' style='display:inline-flex;cursor:pointer'>📄 Selecciona CSV<input type='file' accept='.csv' onchange='handleCSV(event)' style='display:none'></label>";
+  h+="<div id='impMsg'></div></div>";
+  // Manual
+  h+="<div class='card'><div style='font-weight:700;font-size:15px;margin-bottom:12px'>✏️ Entrada manual</div>";
+  h+="<div class='form-grid'>";
+  h+="<div><label>Data*</label><input type='date' id='fDate' value='"+dateStr(new Date())+"'></div>";
+  h+="<div><label>Títol</label><input id='fTitle' placeholder='Cursa fàcil'></div>";
+  h+="<div><label>Dist (km)*</label><input type='number' step='.1' id='fDist' placeholder='10.5'></div>";
+  h+="<div><label>Durada</label><input id='fDur' placeholder='0:55:30'></div>";
+  h+="<div><label>FC mitj</label><input type='number' id='fHR' placeholder='145'></div>";
+  h+="<div><label>Ritme (M:SS)</label><input id='fPace' placeholder='5:15'></div>";
+  h+="<div><label>D+ (m)</label><input type='number' id='fAsc' placeholder='350'></div>";
+  h+="</div><button class='btn' style='margin-top:14px;width:100%' onclick='addManual()'>+ Afegir</button></div></div>";
+  m.innerHTML=h;
+}
+
+function renderCfg(m){
+  const zb=settings.zones||karv(settings.hrMax,settings.hrRest);
+  const bounds=[{l:settings.hrRest,h:zb[0]},{l:zb[0],h:zb[1]},{l:zb[1],h:zb[2]},{l:zb[2],h:zb[3]},{l:zb[3],h:settings.hrMax}];
+  const zNames=["Z1 Recup","Z2 Aeròb","Z3 Tempo","Z4 Llind","Z5 VO₂max"];
+  const zCols=["#7BC8F6","#4CAF50","#FFD600","#FF9800","#F44336"];
+  let h="<div class='tab-content'><div class='sec-title'>Perfil</div><div class='sec-sub'>Configuració i zones FC</div>";
+  h+="<div class='card'><div class='form-grid'>";
+  h+="<div><label>Nom</label><input value='"+settings.name+"' onchange='updSet(\"name\",this.value)'></div>";
+  h+="<div><label>FC Màx</label><input type='number' value='"+settings.hrMax+"' onchange='updSet(\"hrMax\",+this.value)'></div>";
+  h+="<div><label>FC Repòs</label><input type='number' value='"+settings.hrRest+"' onchange='updSet(\"hrRest\",+this.value)'></div>";
+  h+="<div><label>Obj setm (km)</label><input type='number' value='"+settings.weeklyTarget+"' onchange='updSet(\"weeklyTarget\",+this.value)'></div>";
+  h+="<div><label>Obj anual (km)</label><input type='number' value='"+settings.yearlyGoal+"' onchange='updSet(\"yearlyGoal\",+this.value)'></div>";
+  h+="<div><label>Pes (kg)</label><input type='number' value='"+settings.weight+"' onchange='updSet(\"weight\",+this.value)'></div>";
+  h+="</div></div>";
+  // Strava API
+  h+="<div class='card' style='border-left:4px solid #FC4C02'><h3 style='margin-bottom:12px'>Strava API</h3>";
+  h+="<div style='font-size:12px;color:var(--ts);line-height:1.7;margin-bottom:12px;padding:10px 12px;background:var(--bg);border-radius:8px'>Ves a <b>strava.com/settings/api</b> per obtenir les credencials. Callback domain: <b>ffontsere.github.io</b></div>";
+  h+="<div class='form-grid'>";
+  h+="<div><label>Client ID</label><input value='"+(settings.stravaClientId||"")+"' onchange='updSet(\"stravaClientId\",this.value)'></div>";
+  h+="<div><label>Client Secret</label><input type='password' value='"+(settings.stravaSecret||"")+"' onchange='updSet(\"stravaSecret\",this.value)' placeholder='Entra el secret aquí'></div>";
+  h+="</div>";
+  if(settings.stravaToken)h+="<div style='margin-top:8px;font-size:12px;color:var(--ok)'>✅ Connectat · Token vàlid fins "+new Date(settings.stravaExpires*1000).toLocaleString("ca")+"</div>";
+  h+="</div>";
+  // AI Coach config
+  h+="<div class='card' style='border-left:4px solid #9C64EA'><h3 style='margin-bottom:12px'>🤖 AI Coach</h3>";
+  h+="<div style='font-size:12px;color:var(--ts);line-height:1.7;margin-bottom:12px;padding:10px 12px;background:var(--bg);border-radius:8px'>Clau d'API per a l'entrenador IA. <b>Anthropic:</b> console.anthropic.com → API Keys. <b>OpenAI:</b> platform.openai.com → API keys. La clau es guarda només al teu dispositiu.</div>";
+  h+="<div class='form-grid'>";
+  h+="<div><label>Proveïdor</label><select onchange='updSet(\\x22aiProvider\\x22,this.value);updSet(\\x22aiModel\\x22,this.value===\\x22anthropic\\x22?\\x22claude-haiku-4-5-20251001\\x22:\\x22gpt-4o-mini\\x22);render()' style='background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px;font-size:14px;width:100%;font-family:inherit'><option value='anthropic'"+(settings.aiProvider==="anthropic"?" selected":"")+">Anthropic (Claude)</option><option value='openai'"+(settings.aiProvider==="openai"?" selected":"")+">OpenAI (GPT)</option></select></div>";
+  h+="<div><label>Model</label><input value='"+(settings.aiModel||"")+"' onchange='updSet(\\x22aiModel\\x22,this.value)'></div>";
+  h+="<div style='grid-column:1/-1'><label>Clau d'API</label><input type='password' value='"+(settings.aiKey||"")+"' onchange='updSet(\\x22aiKey\\x22,this.value)' placeholder='sk-...'></div>";
+  h+="</div>";
+  h+="<div style='margin-top:8px;font-size:11px;color:var(--tm)'>"+(settings.aiKey?"✅ Clau configurada":"Sense clau")+" · Model actual: "+(settings.aiModel||"cap")+"</div>";
+  h+="</div>";
+  // Zones
+  h+="<div class='card'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'><h3 style='margin:0'>Zones FC</h3><button class='btn' style='padding:5px 12px;font-size:11px;border-radius:8px' onclick='resetZones()'>Recalcular Karvonen</button></div>";
+  zNames.forEach((n,i)=>{
+    h+="<div style='display:flex;align-items:center;gap:8px;margin-bottom:8px'><div style='width:10px;height:10px;border-radius:3px;background:"+zCols[i]+"'></div><div style='width:80px;font-size:12px;font-weight:600'>"+n+"</div><div style='flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden'><div style='width:"+Math.max(0,Math.min(100,(bounds[i].h-bounds[i].l)/(settings.hrMax-settings.hrRest)*100))+"%;height:100%;background:"+zCols[i]+";border-radius:3px'></div></div><span style='font-size:12px;color:var(--tm);min-width:28px;text-align:right'>"+bounds[i].l+"</span><span style='font-size:10px;color:var(--tm)'>–</span>";
+    if(i<4)h+="<input type='number' value='"+bounds[i].h+"' onchange='updZone("+i+",+this.value)' style='width:55px;padding:4px 6px;text-align:center;font-size:12px;font-weight:700;color:"+zCols[i]+";background:var(--bg);border:1px solid var(--bd);border-radius:6px;outline:none'>";
+    else h+="<span style='width:55px;text-align:center;font-size:12px;font-weight:700;color:"+zCols[i]+"'>"+bounds[i].h+"</span>";
+    h+="</div>";
+  });
+  h+="<div style='font-size:11px;color:var(--tm);margin-top:8px'>"+(settings.zones?"🎛️ Personalitzades":"📐 Karvonen")+"</div></div>";
+  h+="<div class='card'><button onclick='clearAll()' style='background:rgba(229,56,59,.08);border:1px solid rgba(229,56,59,.2);border-radius:8px;padding:8px 16px;color:var(--dn);font-size:12px;font-weight:700;cursor:pointer'>Esborrar tot ("+acts.length+" act.)</button></div></div>";
+  m.innerHTML=h;
+}
+
+function statHTML(l,v,u,c){return"<div class='stat'><div class='label'>"+l+"</div><div class='val' style='color:"+c+"'>"+v+"</div>"+(u?"<div class='unit'>"+u+"</div>":"")+"</div>"}
+
+// ═══ ACTIONS ═══
+function handleCSV(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=function(ev){
+    try{
+      const p=parseCSV(ev.target.result);
+      if(!p.length){document.getElementById("impMsg").innerHTML="<div style='margin-top:10px;padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(229,56,59,.08);color:var(--dn)'>Cap activitat trobada.</div>";return}
+      const ex=new Set(acts.map(a=>a.date+"_"+a.distance));
+      const nw=p.filter(a=>!ex.has(a.date+"_"+a.distance));
+      acts=acts.concat(nw).sort((a,b)=>a.date.localeCompare(b.date));
+      saveActs();
+      document.getElementById("impMsg").innerHTML="<div style='margin-top:10px;padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(0,184,101,.08);color:var(--ok)'>"+nw.length+" noves activitats importades.</div>";
+      render();
+    }catch(err){document.getElementById("impMsg").innerHTML="<div style='margin-top:10px;padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(229,56,59,.08);color:var(--dn)'>Error: "+err.message+"</div>"}
+  };
+  r.readAsText(f);e.target.value="";
+}
+
+function addManual(){
+  const dt=document.getElementById("fDate").value,dist=parseFloat(document.getElementById("fDist").value);
+  if(!dt||isNaN(dist))return;
+  const dur=pD(document.getElementById("fDur").value),hr=document.getElementById("fHR").value?+document.getElementById("fHR").value:null;
+  let pace=pP(document.getElementById("fPace").value);if(!pace&&dur&&dist>0)pace=dur/dist;
+  const asc=document.getElementById("fAsc").value?+document.getElementById("fAsc").value:null;
+  const trimp=cTR(dur?dur/60:null,hr,settings.hrMax,settings.hrRest);
+  acts.push({id:"m-"+Date.now(),date:dt,title:document.getElementById("fTitle").value||"Cursa",distance:dist,duration:dur,avgHR:hr?Math.round(hr):null,maxHR:null,pace:pace,ascent:asc,cadence:null,trimp:trimp,vo2:estVO2(pace,hr,settings.hrMax),hrZone:hr?hZ(hr,settings.hrMax,settings.hrRest,settings.zones):null,source:"manual"});
+  acts.sort((a,b)=>a.date.localeCompare(b.date));saveActs();curTab="feed";render();
+}
+
+function delAct(id){acts=acts.filter(a=>a.id!==id);saveActs();render()}
+function clearAll(){if(confirm("Esborrar TOTES les activitats?")){acts=[];saveActs();streamCache={};try{localStorage.removeItem("rt4:streams")}catch{}render()}}
+function updSet(k,v){settings[k]=v;saveSettings();if(k!=="stravaSecret"&&k!=="stravaClientId")render()}
+function updZone(i,v){const cur=settings.zones||karv(settings.hrMax,settings.hrRest);const nz=[...cur];nz[i]=v;for(let j=i+1;j<4;j++){if(nz[j]<=nz[j-1])nz[j]=nz[j-1]+1}if(nz[0]<=settings.hrRest)nz[0]=settings.hrRest+1;settings.zones=nz;recalcAllZones();saveSettings();render()}
+function resetZones(){settings.zones=karv(settings.hrMax,settings.hrRest);recalcAllZones();saveSettings();render()}
+function recalcAllZones(){acts.forEach(a=>{if(a.avgHR)a.hrZone=hZ(a.avgHR,settings.hrMax,settings.hrRest,settings.zones);a.vo2=estVO2(a.pace,a.avgHR,settings.hrMax)});saveActs()}
+
+// ═══ STRAVA INTEGRATION ═══
+const STRAVA_REDIRECT=window.location.origin+window.location.pathname;
+
+function stravaConnect(){
+  if(!settings.stravaClientId||!settings.stravaSecret){alert("Configura Client ID i Client Secret a la pestanya Perfil primer.");return}
+  const url="https://www.strava.com/oauth/authorize?client_id="+settings.stravaClientId+"&redirect_uri="+encodeURIComponent(STRAVA_REDIRECT)+"&response_type=code&approval_prompt=auto&scope=activity:read_all";
+  window.location.href=url;
+}
+
+async function stravaExchangeToken(code){
+  const msg=document.getElementById("stravaMsg");
+  if(msg)msg.innerHTML="<div style='padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(45,113,230,.08);color:var(--bu)'>Connectant amb Strava...</div>";
+  try{
+    const resp=await fetch("https://www.strava.com/oauth/token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({client_id:settings.stravaClientId,client_secret:settings.stravaSecret,code:code,grant_type:"authorization_code"})});
+    if(!resp.ok)throw new Error("Error "+resp.status);
+    const data=await resp.json();
+    settings.stravaToken=data.access_token;
+    settings.stravaRefresh=data.refresh_token;
+    settings.stravaExpires=data.expires_at;
+    saveSettings();
+    if(msg)msg.innerHTML="<div style='padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(0,184,101,.08);color:var(--ok)'>✓ Connectat a Strava com a "+((data.athlete&&data.athlete.firstname)||"atleta")+"!</div>";
+    await stravaFetchActivities();
+  }catch(err){
+    if(msg)msg.innerHTML="<div style='padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(229,56,59,.08);color:var(--dn)'>Error: "+err.message+". Comprova el Client Secret a Perfil.</div>";
+  }
+}
+
+async function stravaRefreshToken(){
+  if(!settings.stravaRefresh)return false;
+  try{
+    const resp=await fetch("https://www.strava.com/oauth/token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({client_id:settings.stravaClientId,client_secret:settings.stravaSecret,refresh_token:settings.stravaRefresh,grant_type:"refresh_token"})});
+    if(!resp.ok)return false;
+    const data=await resp.json();
+    settings.stravaToken=data.access_token;
+    settings.stravaRefresh=data.refresh_token;
+    settings.stravaExpires=data.expires_at;
+    saveSettings();
+    return true;
+  }catch{return false}
+}
+
+async function stravaEnsureToken(){
+  if(!settings.stravaToken)return false;
+  if(Date.now()/1000>=settings.stravaExpires-300){return await stravaRefreshToken()}
+  return true;
+}
+
+// ═══ STREAM CACHE & FETCH ═══
+let streamCache={};
+function loadStreamCache(){try{streamCache=JSON.parse(localStorage.getItem("rt4:streams"))||{}}catch{streamCache={}}}
+function saveStreamCache(){
+  // LRU: keep only last 40 activities' streams
+  const keys=Object.keys(streamCache);
+  if(keys.length>40){
+    const sorted=keys.sort((a,b)=>(streamCache[a]._ts||0)-(streamCache[b]._ts||0));
+    sorted.slice(0,keys.length-40).forEach(k=>delete streamCache[k]);
+  }
+  try{localStorage.setItem("rt4:streams",JSON.stringify(streamCache))}catch(e){
+    // Storage full - clear oldest half
+    const keys=Object.keys(streamCache).sort((a,b)=>(streamCache[a]._ts||0)-(streamCache[b]._ts||0));
+    keys.slice(0,Math.floor(keys.length/2)).forEach(k=>delete streamCache[k]);
+    try{localStorage.setItem("rt4:streams",JSON.stringify(streamCache))}catch(e2){}
+  }
+}
+
+async function stravaFetchStreams(stravaId){
+  if(streamCache[stravaId])return streamCache[stravaId];
+  const valid=await stravaEnsureToken();
+  if(!valid)throw new Error("Token Strava no vàlid");
+  const keys="time,distance,altitude,velocity_smooth,heartrate,cadence,grade_smooth";
+  const resp=await fetch("https://www.strava.com/api/v3/activities/"+stravaId+"/streams?keys="+keys+"&key_by_type=true&resolution=medium",{headers:{"Authorization":"Bearer "+settings.stravaToken}});
+  if(!resp.ok)throw new Error("HTTP "+resp.status);
+  const data=await resp.json();
+  data._ts=Date.now();
+  streamCache[stravaId]=data;
+  saveStreamCache();
+  return data;
+}
+
+let detailStreams=null;
+async function loadDetailAnalysis(actId){
+  const a=acts.find(x=>x.id===actId);
+  if(!a||a.source!=="strava"){alert("L'anàlisi avançada requereix una activitat sincronitzada des de Strava.");return}
+  const stravaId=a.id.replace("strava-","");
+  const btn=document.getElementById("loadAnalysisBtn");
+  if(btn){btn.textContent="⏳ Carregant streams...";btn.disabled=true}
+  try{
+    detailStreams=await stravaFetchStreams(stravaId);
+    render();
+    setTimeout(()=>{const el=document.getElementById("advAnalysis");if(el)el.scrollIntoView({behavior:"smooth",block:"start"})},100);
+  }catch(err){
+    if(btn){btn.textContent="❌ Error: "+err.message+" (reintenta)";btn.disabled=false}
+  }
+}
+
+function stravaParseActivity(a){
+  const dist=a.distance?Math.round(a.distance/10)/100:null; // meters to km
+  const dur=a.moving_time||a.elapsed_time||null;
+  const avgHR=a.average_heartrate?Math.round(a.average_heartrate):null;
+  const maxHR=a.max_heartrate?Math.round(a.max_heartrate):null;
+  const asc=a.total_elevation_gain?Math.round(a.total_elevation_gain):null;
+  const pace=(dist&&dur&&dist>0)?dur/dist:null;
+  const trimp=cTR(dur?dur/60:null,avgHR,settings.hrMax,settings.hrRest);
+  const vo2=estVO2(pace,avgHR,settings.hrMax);
+  const d=new Date(a.start_date_local||a.start_date);
+  return{
+    id:"strava-"+a.id,
+    date:dateStr(d),
+    title:a.name||"Cursa",
+    distance:dist,
+    duration:dur,
+    avgHR:avgHR,
+    maxHR:maxHR,
+    pace:pace,
+    ascent:asc,
+    cadence:a.average_cadence?Math.round(a.average_cadence*2):null,
+    trimp:trimp,
+    vo2:vo2,
+    hrZone:avgHR?hZ(avgHR,settings.hrMax,settings.hrRest,settings.zones):null,
+    source:"strava"
+  };
+}
+
+async function stravaFetchActivities(){
+  const msg=document.getElementById("stravaMsg");
+  const valid=await stravaEnsureToken();
+  if(!valid){
+    if(msg)msg.innerHTML="<div style='padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(229,56,59,.08);color:var(--dn)'>Token expirat. Reconnecta amb Strava.</div>";
+    return;
+  }
+  if(msg)msg.innerHTML="<div style='padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(45,113,230,.08);color:var(--bu)'>⏳ Sincronitzant activitats de Strava...</div>";
+  try{
+    // Find latest strava activity date to use as 'after' filter
+    const stravaActs=acts.filter(a=>a.source==="strava");
+    let afterEpoch=0;
+    if(stravaActs.length>0){
+      const lastDate=stravaActs.reduce((latest,a)=>a.date>latest?a.date:latest,stravaActs[0].date);
+      afterEpoch=Math.floor(new Date(lastDate).getTime()/1000);
+    }
+
+    let allFetched=[],page=1,hasMore=true;
+    while(hasMore&&page<=10){
+      let url="https://www.strava.com/api/v3/athlete/activities?per_page=200&page="+page;
+      if(afterEpoch>0)url+="&after="+afterEpoch;
+      const resp=await fetch(url,{headers:{"Authorization":"Bearer "+settings.stravaToken}});
+      if(resp.status===401){
+        // Token invalid, try refresh
+        const refreshed=await stravaRefreshToken();
+        if(!refreshed)throw new Error("Token invalid. Reconnecta amb Strava.");
+        continue; // retry same page with new token
+      }
+      if(!resp.ok){
+        const errBody=await resp.text().catch(()=>"");
+        throw new Error("HTTP "+resp.status+(errBody?" - "+errBody.slice(0,100):""));
+      }
+      const data=await resp.json();
+      if(!data||!data.length){hasMore=false;break}
+      allFetched=allFetched.concat(data);
+      page++;
+      if(data.length<200)hasMore=false;
+    }
+
+    // Filter only running activities
+    const runs=allFetched.filter(a=>{
+      const t=(a.sport_type||a.type||"").toLowerCase();
+      return t==="run"||t==="trailrun"||t==="trail_run"||t==="virtualrun"||t==="virtual_run"||t==="treadmill";
+    });
+
+    const parsed=runs.map(stravaParseActivity);
+
+    // Deduplicate by strava ID and by date+distance
+    const existingIds=new Set(acts.map(a=>a.id));
+    const existingDates=new Set(acts.map(a=>a.date+"_"+a.distance));
+    const newActs=parsed.filter(a=>!existingIds.has(a.id)&&!existingDates.has(a.date+"_"+a.distance));
+
+    if(newActs.length>0){
+      acts=acts.concat(newActs).sort((a,b)=>a.date.localeCompare(b.date));
+      saveActs();
+    }
+
+    if(msg)msg.innerHTML="<div style='padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(0,184,101,.08);color:var(--ok)'>✓ "+newActs.length+" noves activitats importades"+(allFetched.length>0?" ("+allFetched.length+" totals, "+runs.length+" runs)":"")+".</div>";
+    render();
+  }catch(err){
+    if(msg)msg.innerHTML="<div style='padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(229,56,59,.08);color:var(--dn)'>Error: "+err.message+"</div>";
+  }
+}
+
+function stravaDisconnect(){
+  settings.stravaToken="";settings.stravaRefresh="";settings.stravaExpires=0;
+  saveSettings();render();
+}
+
+// ═══ INIT ═══
+load();
+loadStreamCache();
+
+// Handle Strava OAuth callback
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get("code");
+  if(code){
+    window.history.replaceState({},"",window.location.pathname);
+    curTab="imp";
+    render();
+    setTimeout(()=>stravaExchangeToken(code),300);
+    return;
+  }
+})();
+
+render();
+
+// Dynamic status bar color (light/dark)
+function updateThemeColor(){
+  const dark=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;
+  let meta=document.querySelector('meta[name=theme-color]:not([media])');
+  if(!meta){meta=document.createElement("meta");meta.name="theme-color";document.head.appendChild(meta)}
+  meta.content=dark?"#1C1A17":"#F7F3EA";
+}
+updateThemeColor();
+if(window.matchMedia){window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{updateThemeColor();render()})}
+
+// Material ripple effect on tappable elements
+document.addEventListener("pointerdown",e=>{
+  const t=e.target.closest(".btn,.act-card,.nav-item,.badge-item,.plan-item,.fab");
+  if(!t)return;
+  const r=document.createElement("span");
+  const rect=t.getBoundingClientRect();
+  const size=Math.max(rect.width,rect.height);
+  r.style.cssText="position:absolute;border-radius:50%;background:currentColor;opacity:.18;pointer-events:none;width:"+size+"px;height:"+size+"px;left:"+(e.clientX-rect.left-size/2)+"px;top:"+(e.clientY-rect.top-size/2)+"px;transform:scale(0);transition:transform .4s,opacity .5s";
+  const pos=getComputedStyle(t).position;
+  if(pos==="static")t.style.position="relative";
+  if(getComputedStyle(t).overflow!=="hidden"&&!t.classList.contains("act-card")&&!t.classList.contains("fab"))t.style.overflow="hidden";
+  t.appendChild(r);
+  requestAnimationFrame(()=>{r.style.transform="scale(2.2)";r.style.opacity="0"});
+  // Light haptic feedback if supported
+  if(navigator.vibrate)navigator.vibrate(8);
+  setTimeout(()=>r.remove(),550);
+});
+
+// Service Worker
+if("serviceWorker"in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+</script>
+</body>
+</html>
